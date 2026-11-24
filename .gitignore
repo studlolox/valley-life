@@ -1,0 +1,7 @@
+# Stardew Valley reference APK (3rd-party modded artifact, not source)
+stardew-valley-mod-1.6.15.3-an1.com.apk
+
+# Build/bundler output
+dist/
+build/
+*.local
