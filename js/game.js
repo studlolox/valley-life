@@ -31,6 +31,20 @@ const SEEDS = {
   root:   { name: 'Root Seed',   crop: 'root',   season: 'Winter', price: 8 },
 };
 
+// Building definitions (original data)
+const BUILDINGS = {
+  coop:  { name: 'Coop',  cost: { wood: 40, stone: 15 }, capacity: 4, houses: ['chicken'] },
+  barn:  { name: 'Barn',  cost: { wood: 80, stone: 40 }, capacity: 6, houses: ['cow', 'ostrich'] },
+  shed:  { name: 'Shed',  cost: { wood: 30, stone: 10 }, capacity: 0, houses: null },
+};
+
+// Animal definitions (original data)
+const ANIMALS = {
+  chicken: { name: 'Chicken',  product: 'egg',   productAmount: 1, hayConsumption: 1 },
+  cow:     { name: 'Cow',      product: 'milk',  productAmount: 1, hayConsumption: 2 },
+  ostrich: { name: 'Ostrich',  product: 'egg',   productAmount: 1, hayConsumption: 1 },
+};
+
 // ============ Game State ============
 const state = {
   day: 1,
@@ -38,8 +52,12 @@ const state = {
   energy: MAX_ENERGY,
   maxEnergy: MAX_ENERGY,
   money: 500,
+  resources: { wood: 60, stone: 40 },
   inventory: {},
+  buildings: [],
+  animals: [],
   selectedTool: 'hoe',
+  selectedBuilding: null,
   grid: [], // 2D array of tile objects
   player: { x: 0, y: 0, z: 0 },
   isNight: false,
@@ -182,8 +200,10 @@ function refreshTileColors() {
 function updateHUD() {
   const dayEl = document.getElementById('day-display');
   const energyEl = document.getElementById('energy-display');
+  const resEl = document.getElementById('resources-display');
   if (dayEl) dayEl.textContent = `Day ${state.day}, ${SEASONS[state.seasonIndex]}`;
   if (energyEl) energyEl.textContent = `Energy: ${state.energy}/${state.maxEnergy}`;
+  if (resEl) resEl.textContent = `Wood: ${state.resources.wood} Stone: ${state.resources.stone}`;
   document.querySelectorAll('#toolbar button').forEach((b) => {
     b.classList.toggle('active', b.id === `tool-${state.selectedTool}`);
   });
@@ -350,6 +370,95 @@ function scytheTile() {
   return true;
 }
 
+// Can the player afford a building cost?
+function canAfford(buildingKey) {
+  const building = BUILDINGS[buildingKey];
+  if (!building) return false;
+  for (const [res, amt] of Object.entries(building.cost)) {
+    if ((state.resources[res] || 0) < amt) return false;
+  }
+  return true;
+}
+
+// Spend resources for a building
+function spendResources(buildingKey) {
+  const building = BUILDINGS[buildingKey];
+  for (const [res, amt] of Object.entries(building.cost)) {
+    state.resources[res] -= amt;
+  }
+}
+
+// Feature 14: Build coop - construct a coop to house chickens
+function buildStructure(buildingKey) {
+  const building = BUILDINGS[buildingKey];
+  if (!building) return false;
+  const tile = playerTile();
+  if (!tile) return false;
+  if (tile.type !== 'grass') return false;
+  if (tile.planted || tile.hasTree || tile.hasRock || tile.hasWeed) return false;
+  if (!canAfford(buildingKey)) {
+    showMessage('Not enough resources!');
+    return false;
+  }
+  spendResources(buildingKey);
+  state.buildings.push({
+    type: buildingKey,
+    r: state.player.y,
+    c: state.player.x,
+    animals: [],
+    capacity: building.capacity,
+    houses: building.houses,
+  });
+  showMessage(`${building.name} built!`);
+  updateHUD();
+  return true;
+}
+
+// Add an animal to a building if capacity allows and the building houses that type
+function addAnimal(type, buildingIndex) {
+  const animal = ANIMALS[type];
+  if (!animal) return false;
+  const building = state.buildings[buildingIndex];
+  if (!building) return false;
+  if (building.houses && !building.houses.includes(type)) return false;
+  if (building.animals.length >= building.capacity) return false;
+  building.animals.push({ type, fed: false });
+  return true;
+}
+
+// Feed all animals in a building (consumes hay)
+function feedAnimals(buildingIndex) {
+  const building = state.buildings[buildingIndex];
+  if (!building) return false;
+  let totalHay = 0;
+  for (const animal of building.animals) {
+    totalHay += ANIMALS[animal.type].hayConsumption;
+  }
+  if ((state.inventory.hay || 0) < totalHay) {
+    showMessage('Not enough hay!');
+    return false;
+  }
+  state.inventory.hay = (state.inventory.hay || 0) - totalHay;
+  if (state.inventory.hay <= 0) delete state.inventory.hay;
+  for (const animal of building.animals) {
+    animal.fed = true;
+  }
+  return true;
+}
+
+// Feature 16: Animal products - fed animals produce goods each morning
+function collectMorningProducts() {
+  for (const building of state.buildings) {
+    for (const animal of building.animals) {
+      if (animal.fed) {
+        const a = ANIMALS[animal.type];
+        state.inventory[a.product] = (state.inventory[a.product] || 0) + a.productAmount;
+      }
+      animal.fed = false; // reset for next day
+    }
+  }
+}
+
 // Feature 1: Day/night cycle - new morning resets energy to max
 function nextDay() {
   state.day++;
@@ -368,6 +477,7 @@ function nextDay() {
     }
   }
   advanceCropGrowth();
+  collectMorningProducts();
   refreshTileColors();
   updateHUD();
   showMessage(`New day! Day ${state.day}, ${SEASONS[state.seasonIndex]}`);
@@ -561,6 +671,13 @@ const ValleyLifeAPI = {
   refreshTileColors,
   GRID_WIDTH,
   GRID_HEIGHT,
+  BUILDINGS,
+  buildStructure,
+  canAfford,
+  ANIMALS,
+  addAnimal,
+  feedAnimals,
+  collectMorningProducts,
 };
 
 if (typeof globalThis !== 'undefined') {

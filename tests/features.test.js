@@ -4,7 +4,7 @@
 import { JSDOM } from 'jsdom';
 
 globalThis.__VALLEYLIFE_TEST__ = true;
-const dom = new JSDOM('<!DOCTYPE html><html><body><canvas id="test-canvas"></canvas><div id="day-display"></div><div id="energy-display"></div><div id="message"></div><div id="toolbar"><button id="tool-hoe"></button><button id="tool-water"></button><button id="tool-axe"></button><button id="tool-scythe"></button></div></body></html>', {
+const dom = new JSDOM('<!DOCTYPE html><html><body><canvas id="test-canvas"></canvas><div id="day-display"></div><div id="energy-display"></div><div id="resources-display"></div><div id="message"></div><div id="toolbar"><button id="tool-hoe"></button><button id="tool-water"></button><button id="tool-axe"></button><button id="tool-scythe"></button></div></body></html>', {
   url: 'http://localhost/',
   pretendToBeVisual: true,
 });
@@ -55,8 +55,12 @@ function resetState() {
   V.state.energy = V.MAX_ENERGY;
   V.state.maxEnergy = V.MAX_ENERGY;
   V.state.money = 500;
+  V.state.resources = { wood: 60, stone: 40 };
   V.state.inventory = {};
+  V.state.buildings = [];
+  V.state.animals = [];
   V.state.selectedTool = 'hoe';
+  V.state.selectedBuilding = null;
   V.state.isNight = false;
   V.state.timeOfDay = 6;
   V.state.dayComplete = false;
@@ -243,6 +247,82 @@ test('Feature 13: Scythe clears weed and may add hay', () => {
   assert(tile.hasWeed === false, 'weed should be cleared');
   const hayAfter = V.state.inventory['hay'] || 0;
   assert(hayAfter >= hayBefore, 'hay count should not decrease');
+});
+
+// ---------- Feature 14: Build coop ----------
+test('Feature 14: Build coop adds a structure that houses chickens', () => {
+  resetState();
+  // ensure player tile is clear grass
+  const tile = V.state.grid[V.state.player.y][V.state.player.x];
+  tile.hasTree = false;
+  tile.hasRock = false;
+  tile.hasWeed = false;
+  tile.planted = null;
+  tile.type = 'grass';
+  const woodBefore = V.state.resources.wood;
+  const stoneBefore = V.state.resources.stone;
+  const result = V.buildStructure('coop');
+  assert(result === true, 'build coop should succeed');
+  assert(V.state.buildings.length === 1, 'one building should exist');
+  assert(V.state.buildings[0].type === 'coop', 'building should be a coop');
+  assert(V.state.buildings[0].capacity === 4, 'coop capacity should be 4');
+  assert(V.state.buildings[0].houses.includes('chicken'), 'coop should house chickens');
+  assert(V.state.resources.wood === woodBefore - V.BUILDINGS.coop.cost.wood, 'wood should be spent');
+  assert(V.state.resources.stone === stoneBefore - V.BUILDINGS.coop.cost.stone, 'stone should be spent');
+});
+
+// ---------- Feature 15: Build barn ----------
+test('Feature 15: Build barn adds a structure that houses cows', () => {
+  resetState();
+  V.state.resources.wood = 200; // ensure enough for barn
+  const tile = V.state.grid[V.state.player.y][V.state.player.x];
+  tile.hasTree = false;
+  tile.hasRock = false;
+  tile.hasWeed = false;
+  tile.planted = null;
+  tile.type = 'grass';
+  const result = V.buildStructure('barn');
+  assert(result === true, 'build barn should succeed');
+  assert(V.state.buildings.length === 1, 'one building should exist');
+  assert(V.state.buildings[0].type === 'barn', 'building should be a barn');
+  assert(V.state.buildings[0].capacity === 6, 'barn capacity should be 6');
+  assert(V.state.buildings[0].houses.includes('cow'), 'barn should house cows');
+});
+
+// ---------- Feature 16: Animal products ----------
+test('Feature 16: Fed chicken produces an egg each morning', () => {
+  resetState();
+  V.buildStructure('coop');
+  V.addAnimal('chicken', 0);
+  V.state.inventory.hay = 5;
+  V.feedAnimals(0); // chicken fed, 1 hay consumed
+  V.collectMorningProducts(); // morning collection
+  assert(V.state.inventory.egg === 1, 'fed chicken should produce an egg');
+  assert((V.state.inventory.hay || 0) === 4, 'hay should be consumed');
+});
+
+// ---------- Feature 17: Animal feeding ----------
+test('Feature 17: Unfed animal produces nothing', () => {
+  resetState();
+  V.buildStructure('coop');
+  V.addAnimal('chicken', 0); // fed defaults to false
+  V.collectMorningProducts();
+  assert(!V.state.inventory.egg, 'unfed chicken should produce nothing');
+});
+
+// ---------- Feature 18: Animal varieties ----------
+test('Feature 18: Ostrich is a distinct animal type from chicken', () => {
+  resetState();
+  V.state.resources = { wood: 300, stone: 100 };
+  V.buildStructure('coop');    // index 0 - houses chicken
+  V.buildStructure('barn');    // index 1 - houses cow and ostrich
+  V.addAnimal('chicken', 0);
+  V.addAnimal('ostrich', 1);
+  assert(V.state.buildings[0].animals.length === 1, 'chicken in coop');
+  assert(V.state.buildings[1].animals.length === 1, 'ostrich in barn');
+  const coopType = V.state.buildings[0].animals[0].type;
+  const barnType = V.state.buildings[1].animals[0].type;
+  assert(coopType === 'chicken' && barnType === 'ostrich', 'ostrich is distinct from chicken');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
