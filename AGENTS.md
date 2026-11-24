@@ -14,10 +14,11 @@ Valley Life is an open-ended farm life simulation game inspired by Stardew Valle
 1. **Do everything yourself.** Never ask the user for confirmation, choices, or missing information before proceeding. If a decision is needed, make a reasonable one and document it in SPEC.md.
 2. **Announce each step in one line before you do it.** State the action concisely, then execute it.
 3. **Write your own code. Never copy code.** All implementations must be original work written by the agent/contractor. Do not copy-paste from Stardew Valley, tutorials, or any external source. You may study Stardew Valley mechanics for design inspiration, but every line of code is written independently.
-4. **Run in the browser.** The game must run in a web browser using three.js. No native dependencies or engine installs are required.
-5. **One test per feature.** Every feature listed in SPEC.md must have exactly one corresponding test that verifies that feature.
-6. **3-part build plan.** SPEC.md must contain a build plan with exactly three parts.
-7. **Commit all work to Git.** Every document and code file must be committed to the Git repository.
+4. **Rename.** Do not use character, place name from the original game, rename it your self.
+5. **Run in the browser.** The game must run in a web browser using three.js. No native dependencies or engine installs are required.
+6. **One test per feature.** Every feature listed in SPEC.md must have exactly one corresponding test that verifies that feature.
+7. **3-part build plan.** SPEC.md must contain a build plan with exactly three parts.
+8. **Commit all work to Git.** Every document and code file must be committed to the Git repository.
 
 ## Document conventions
 
