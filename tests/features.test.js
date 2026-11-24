@@ -59,11 +59,25 @@ function resetState() {
   V.state.inventory = {};
   V.state.buildings = [];
   V.state.animals = [];
+  V.state.mineFloor = 1;
+  V.state.inMine = false;
+  V.state.mineNode = null;
+  V.state.mineMonster = null;
+  V.state.forageItems = [];
+  V.state.fishingSpots = [];
+  V.state.skills = V.initSkills();
+  V.state.relationships = V.initRelationships();
+  V.state.spouse = null;
+  V.state.children = [];
   V.state.selectedTool = 'hoe';
   V.state.selectedBuilding = null;
   V.state.isNight = false;
   V.state.timeOfDay = 6;
   V.state.dayComplete = false;
+  // Reset villager married flags on the shared data object
+  for (const key of Object.keys(V.VILLAGERS || {})) {
+    V.VILLAGERS[key].married = false;
+  }
   V.initGrid();
 }
 
@@ -323,6 +337,196 @@ test('Feature 18: Ostrich is a distinct animal type from chicken', () => {
   const coopType = V.state.buildings[0].animals[0].type;
   const barnType = V.state.buildings[1].animals[0].type;
   assert(coopType === 'chicken' && barnType === 'ostrich', 'ostrich is distinct from chicken');
+});
+
+// ---------- Feature 19: Cave exploration ----------
+test('Feature 19: Entering the mine places the player on the first floor', () => {
+  resetState();
+  V.state.energy = V.MAX_ENERGY;
+  const result = V.enterMine();
+  assert(result === true, 'enter mine should succeed');
+  assert(V.state.inMine === true, 'player should be in the mine');
+  assert(V.state.mineFloor === 1, 'player should be on the first mine floor');
+  assert(V.state.mineNode !== null, 'mine floor should have an ore node');
+  assert(V.state.mineMonster !== null, 'mine floor should have a monster');
+});
+
+// ---------- Feature 20: Ore mining ----------
+test('Feature 20: Mining an ore node yields ore', () => {
+  resetState();
+  V.state.energy = V.MAX_ENERGY;
+  V.state.inventory = {};
+  V.enterMine();
+  const oreType = V.state.mineNode.type;
+  const result = V.mineOre();
+  assert(result === true, 'mining should succeed');
+  assert((V.state.inventory[oreType] || 0) === 1, `mined ${oreType} added to inventory`);
+  assert(V.state.mineNode === null, 'ore node should be cleared after mining');
+});
+
+// ---------- Feature 21: Combat in mines ----------
+test('Feature 21: Attacking a monster with a sword reduces its health', () => {
+  resetState();
+  V.state.energy = V.MAX_ENERGY;
+  V.enterMine();
+  const monsterHp = V.state.mineMonster.hp;
+  const result = V.attackMonster();
+  assert(result === true, 'attack should succeed');
+  assert(V.state.mineMonster.hp === monsterHp - 1, 'monster health should decrease');
+});
+
+// ---------- Feature 22: Floor progression ----------
+test('Feature 22: Deeper floors expose more valuable ores', () => {
+  resetState();
+  const floor1Tier = V.oreTierForFloor(1);
+  const floor5Tier = V.oreTierForFloor(5);
+  assert(floor1Tier.ore === 'copperOre', 'floor 1 should have copper ore');
+  assert(floor5Tier.ore === 'ironOre', 'floor 5 should have iron ore (more valuable)');
+});
+
+// ---------- Feature 23: Smelting ----------
+test('Feature 23: Smelting copper ore produces a copper bar', () => {
+  resetState();
+  V.state.inventory.copperOre = 1;
+  const result = V.smelt('copperOre');
+  assert(result === true, 'smelting should succeed');
+  assert(V.state.inventory.copperBar === 1, 'copper bar produced');
+  assert(!V.state.inventory.copperOre, 'copper ore consumed');
+});
+
+// ---------- Feature 24: Foraging ----------
+test('Feature 24: Foraging collects wild items into inventory', () => {
+  resetState();
+  V.state.forageItems.push({ r: V.state.player.y, c: V.state.player.x, type: 'wildRoot' });
+  const result = V.forage();
+  assert(result === true, 'foraging should succeed');
+  assert(V.state.inventory.wildRoot === 1, 'wild root added to inventory');
+  assert(V.state.forageItems.length === 0, 'forage item consumed');
+});
+
+// ---------- Feature 25: Fishing ----------
+test('Feature 25: Fishing at a valid spot catches a fish', () => {
+  resetState();
+  V.state.energy = V.MAX_ENERGY;
+  V.state.fishingSpots.push({ r: V.state.player.y, c: V.state.player.x });
+  const result = V.fish();
+  assert(result === true, 'fishing should succeed');
+  assert(V.state.inventory.fish === 1, 'fish added to inventory');
+});
+
+// ---------- Feature 26: Skill leveling ----------
+test('Feature 26: Harvesting a crop increases farming experience and levels up', () => {
+  resetState();
+  // Set farming xp close to next level (level 1 needs 25 xp)
+  V.state.skills.farming.xp = 20;
+  const tile = V.state.grid[V.state.player.y][V.state.player.x];
+  tile.type = 'tilled';
+  tile.planted = 'turnip';
+  tile.growth = 1;
+  tile.watered = true;
+  V.harvestTile(); // +10 xp -> 30, enough to level from 1 to 2
+  assert(V.state.skills.farming.level === 2, 'farming skill should level up');
+  assert(V.state.skills.farming.xp === 5, 'remaining xp after level up');
+});
+
+// ---------- Feature 27: Skill caps ----------
+test('Feature 27: Each skill has a maximum level', () => {
+  resetState();
+  // Max out farming skill
+  V.state.skills.farming.level = V.SKILL_MAX_LEVEL;
+  V.state.skills.farming.xp = 9999;
+  const tile = V.state.grid[V.state.player.y][V.state.player.x];
+  tile.type = 'tilled';
+  tile.planted = 'turnip';
+  tile.growth = 1;
+  tile.watered = true;
+  V.harvestTile();
+  assert(V.state.skills.farming.level === V.SKILL_MAX_LEVEL, 'skill cannot exceed max level');
+});
+
+// ---------- Feature 28: NPC interaction ----------
+test('Feature 28: Interacting with a villager displays their dialogue', () => {
+  resetState();
+  // Place the player on the elder's tile
+  V.state.player.y = V.VILLAGER_POSITIONS.elder.r;
+  V.state.player.x = V.VILLAGER_POSITIONS.elder.c;
+  const dialogue = V.talkToVillager();
+  assert(typeof dialogue === 'string' && dialogue.length > 0, 'talking should return dialogue text');
+});
+
+// ---------- Feature 29: Gift giving ----------
+test('Feature 29: Giving a liked gift increases relationship points', () => {
+  resetState();
+  const villager = 'baker';
+  V.state.player.y = V.VILLAGER_POSITIONS[villager].r;
+  V.state.player.x = V.VILLAGER_POSITIONS[villager].c;
+  // Talk first so the villager accepts a gift
+  V.talkToVillager();
+  // Give the baker's liked gift (wheat)
+  V.state.inventory.wheat = 1;
+  const before = V.state.relationships[villager].points;
+  const result = V.giveGift(villager, 'wheat');
+  assert(result === true, 'gift giving should succeed');
+  assert(V.state.relationships[villager].points > before, 'relationship points should increase');
+  assert(!V.state.inventory.wheat, 'gift item should be consumed');
+});
+
+// ---------- Feature 30: Marriage ----------
+test('Feature 30: Marrying an eligible villager sets the player\'s spouse', () => {
+  resetState();
+  const villager = 'farmer';
+  V.state.player.y = V.VILLAGER_POSITIONS[villager].r;
+  V.state.player.x = V.VILLAGER_POSITIONS[villager].c;
+  // Build up relationship by talking and giving liked gifts
+  V.state.inventory.turnip = 5; // turnip is the farmer's liked gift
+  for (let i = 0; i < 10; i++) {
+    V.talkToVillager();
+    V.giveGift(villager, 'turnip');
+  }
+  const result = V.marryVillager(villager);
+  assert(result === true, 'marriage should succeed');
+  assert(V.state.spouse === villager, 'spouse should be set to the villager');
+});
+
+// ---------- Feature 31: Spouse help ----------
+test('Feature 31: After marriage, spouse waters at least one crop during the night', () => {
+  resetState();
+  const villager = 'farmer';
+  V.state.player.y = V.VILLAGER_POSITIONS[villager].r;
+  V.state.player.x = V.VILLAGER_POSITIONS[villager].c;
+  V.state.inventory.turnip = 5;
+  for (let i = 0; i < 10; i++) {
+    V.talkToVillager();
+    V.giveGift(villager, 'turnip');
+  }
+  V.marryVillager(villager);
+  assert(V.state.spouse === villager, 'married setup');
+  // Plant an unwatered crop on the player's tile
+  const tile = V.state.grid[V.state.player.y][V.state.player.x];
+  tile.type = 'tilled';
+  tile.planted = 'turnip';
+  tile.growth = 0;
+  tile.watered = false;
+  V.nextDay(); // night passes, spouse helps
+  assert(tile.watered === true, 'spouse should water at least one crop');
+});
+
+// ---------- Feature 32: Children ----------
+test('Feature 32: Choosing to have a child adds a child to the household', () => {
+  resetState();
+  const villager = 'farmer';
+  V.state.player.y = V.VILLAGER_POSITIONS[villager].r;
+  V.state.player.x = V.VILLAGER_POSITIONS[villager].c;
+  V.state.inventory.turnip = 5;
+  for (let i = 0; i < 10; i++) {
+    V.talkToVillager();
+    V.giveGift(villager, 'turnip');
+  }
+  V.marryVillager(villager);
+  const before = V.state.children.length;
+  const result = V.haveChild();
+  assert(result === true, 'having a child should succeed');
+  assert(V.state.children.length === before + 1, 'a child should be added to the household');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

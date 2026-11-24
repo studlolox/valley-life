@@ -45,6 +45,93 @@ const ANIMALS = {
   ostrich: { name: 'Ostrich',  product: 'egg',   productAmount: 1, hayConsumption: 1 },
 };
 
+// Mine constants and helpers (original data)
+const MINE_ENERGY_PER_ENTER = 10;
+const MINE_ENERGY_PER_MINE = 10;
+const MINE_ENERGY_PER_ATTACK = 15;
+const ENERGY_PER_FISH = 8;
+
+// Ore tier available on a given mine floor (deeper = more valuable)
+function oreTierForFloor(floor) {
+  if (floor >= 10) return { ore: 'goldOre', bar: 'goldBar', monsterHP: 8 };
+  if (floor >= 5) return { ore: 'ironOre', bar: 'ironBar', monsterHP: 5 };
+  return { ore: 'copperOre', bar: 'copperBar', monsterHP: 3 };
+}
+
+// Skill system (original data)
+const SKILL_MAX_LEVEL = 10;
+const SKILLS = {
+  farming: { name: 'Farming' },
+  foraging: { name: 'Foraging' },
+  fishing: { name: 'Fishing' },
+  mining: { name: 'Mining' },
+  combat: { name: 'Combat' },
+};
+
+function xpForNextLevel(level) {
+  return 25 * level;
+}
+
+function initSkills() {
+  const skills = {};
+  for (const key of Object.keys(SKILLS)) {
+    skills[key] = { level: 1, xp: 0 };
+  }
+  return skills;
+}
+
+function gainExperience(skill, amount) {
+  const s = state.skills[skill];
+  if (!s || s.level >= SKILL_MAX_LEVEL) return;
+  s.xp += amount;
+  while (s.xp >= xpForNextLevel(s.level) && s.level < SKILL_MAX_LEVEL) {
+    s.xp -= xpForNextLevel(s.level);
+    s.level += 1;
+  }
+}
+
+// Villager data for social relationships (original data, renamed characters)
+const VILLAGERS = {
+  elder:   { name: 'Village Elder',   likedGift: 'copperBar', marriageable: false },
+  baker:   { name: 'Baker',           likedGift: 'wheat',     marriageable: true },
+  smith:   { name: 'Smith',           likedGift: 'ironBar',   marriageable: true },
+  farmer:  { name: 'Farmhand',        likedGift: 'turnip',    marriageable: true },
+  tailor:  { name: 'Tailor',          likedGift: 'cloth',     marriageable: true },
+  librarian: { name: 'Librarian',     likedGift: 'goldBar',   marriageable: true },
+};
+
+// Relationship points needed to marry
+const MARRIAGE_RELATIONSHIP = 10;
+
+// Villager dialogue (original dialogue, not copied from any source)
+const VILLAGER_DIALOGUE = {
+  elder:   ["Welcome to the valley, farmer.", "The seasons change, but the valley endures.", "Take care of your land and it will care for you."],
+  baker:   ["Fresh bread comes out of the oven every morning.", "Nothing beats the smell of warm bread.", "I could use some wheat for today's loaves."],
+  smith:   ["A good tool makes all the difference in the mine.", "I can smelt your ores into strong bars.", "The deeper you go, the tougher the monsters."],
+  farmer:  ["The soil here is rich if you tend it daily.", "Water your crops every morning for the best yield.", "A well-fed animal is a productive animal."],
+  tailor:  ["I stitch clothes from cloth gathered around the valley.", "Wear something sturdy for farm work."],
+  librarian: ["The valley's history is kept in these old books.", "Quiet please, I am reading."],
+};
+
+// Villager positions on the farm grid (row, column)
+const VILLAGER_POSITIONS = {
+  elder:   { r: 10, c: 10 },
+  baker:   { r: 4,  c: 12 },
+  smith:   { r: 6,  c: 14 },
+  farmer:  { r: 8,  c: 16 },
+  tailor:  { r: 12, c: 14 },
+  librarian: { r: 2, c: 12 },
+};
+
+// Track relationship points and whether the player talked today per villager
+function initRelationships() {
+  const relationships = {};
+  for (const key of Object.keys(VILLAGERS)) {
+    relationships[key] = { points: 0, talkedToday: false };
+  }
+  return relationships;
+}
+
 // ============ Game State ============
 const state = {
   day: 1,
@@ -56,6 +143,16 @@ const state = {
   inventory: {},
   buildings: [],
   animals: [],
+  mineFloor: 1,
+  inMine: false,
+  mineNode: null,
+  mineMonster: null,
+  forageItems: [],
+  fishingSpots: [],
+  skills: initSkills(),
+  relationships: initRelationships(),
+  spouse: null,
+  children: [],
   selectedTool: 'hoe',
   selectedBuilding: null,
   grid: [], // 2D array of tile objects
@@ -258,6 +355,7 @@ function tillTile() {
   tile.watered = false;
   spendEnergy(ENERGY_PER_TILL);
   refreshTileColors();
+  gainExperience('farming', 5);
   return true;
 }
 
@@ -284,6 +382,7 @@ function plantSeed(seedKey) {
   tile.watered = false;
   spendEnergy(ENERGY_PER_PLANT);
   refreshTileColors();
+  gainExperience('farming', 8);
   return true;
 }
 
@@ -335,6 +434,7 @@ function harvestTile() {
   tile.type = 'tilled';
   refreshTileColors();
   showMessage(`Harvested ${crop.name}!`);
+  gainExperience('farming', 10);
   return true;
 }
 
@@ -459,6 +559,237 @@ function collectMorningProducts() {
   }
 }
 
+// Feature 28: NPC interaction - talk to a villager at the player's tile
+function talkToVillager() {
+  for (const key of Object.keys(VILLAGER_POSITIONS)) {
+    const pos = VILLAGER_POSITIONS[key];
+    if (pos.r === state.player.y && pos.c === state.player.x) {
+      const rel = state.relationships[key];
+      rel.talkedToday = true;
+      // A friendly chat slightly builds rapport
+      if (rel.points < MARRIAGE_RELATIONSHIP) {
+        rel.points += 1;
+      }
+      const dialogue = VILLAGER_DIALOGUE[key] || ['...'];
+      return dialogue[Math.floor(Math.random() * dialogue.length)];
+    }
+  }
+  return null;
+}
+
+// Feature 29: Gift giving - give a gift to a villager
+function giveGift(villagerKey, itemKey) {
+  const villager = VILLAGERS[villagerKey];
+  if (!villager) return false;
+  const rel = state.relationships[villagerKey];
+  if (!rel) return false;
+  if ((state.inventory[itemKey] || 0) < 1) return false;
+  if (rel.talkedToday === false) {
+    // Villagers prefer to receive a gift after a conversation
+    return false;
+  }
+  state.inventory[itemKey]--;
+  if (state.inventory[itemKey] <= 0) delete state.inventory[itemKey];
+  if (itemKey === villager.likedGift) {
+    rel.points += 5; // liked gift gives a positive relationship increase
+  } else {
+    rel.points += 1; // any gift still builds a little rapport
+  }
+  rel.talkedToday = false; // reset for the next day
+  showMessage(`Gave ${itemKey} to ${villager.name}!`);
+  return true;
+}
+
+// Feature 30: Marriage - marry an eligible villager
+function marryVillager(villagerKey) {
+  const villager = VILLAGERS[villagerKey];
+  if (!villager || !villager.marriageable) return false;
+  if (state.spouse !== null) return false; // already married
+  const rel = state.relationships[villagerKey];
+  if (!rel || rel.points < MARRIAGE_RELATIONSHIP) return false;
+  if (villager.married) return false; // already married to someone else
+  state.spouse = villagerKey;
+  villager.married = true;
+  showMessage(`You married ${villager.name}!`);
+  return true;
+}
+
+// Feature 31: Spouse help - spouse waters at least one crop during the night
+function spouseNightlyHelp() {
+  if (state.spouse === null) return false;
+  const villager = VILLAGERS[state.spouse];
+  if (!villager) return false;
+  let watered = 0;
+  for (let r = 0; r < GRID_HEIGHT; r++) {
+    for (let c = 0; c < GRID_WIDTH; c++) {
+      const tile = state.grid[r][c];
+      if (tile.planted && tile.type === 'tilled' && !tile.watered) {
+        tile.watered = true;
+        watered++;
+        break;
+      }
+    }
+    if (watered > 0) break;
+  }
+  return watered > 0;
+}
+
+// Feature 32: Children - a married couple may choose to have a child
+function haveChild() {
+  if (state.spouse === null) return false;
+  const child = { name: `Child ${state.children.length + 1}`, bornDay: state.day };
+  state.children.push(child);
+  showMessage(`A child was born: ${child.name}!`);
+  return true;
+}
+
+// Feature 19: Cave exploration - enter the mine, placed on first floor
+function enterMine() {
+  if (!canUseEnergy(MINE_ENERGY_PER_ENTER)) {
+    showMessage('Not enough energy!');
+    return false;
+  }
+  state.inMine = true;
+  state.mineFloor = 1;
+  spendEnergy(MINE_ENERGY_PER_ENTER);
+  generateMineFloor();
+  return true;
+}
+
+function exitMine() {
+  state.inMine = false;
+  state.mineNode = null;
+  state.mineMonster = null;
+  return true;
+}
+
+function generateMineFloor() {
+  const tier = oreTierForFloor(state.mineFloor);
+  state.mineNode = { type: tier.ore, x: 3, y: 3 };
+  state.mineMonster = { type: 'monster', hp: tier.monsterHP, x: 7, y: 7 };
+}
+
+// Feature 20: Ore mining - pickaxe on ore node yields ore
+function mineOre() {
+  if (!state.inMine || !state.mineNode) return false;
+  if (!canUseEnergy(MINE_ENERGY_PER_MINE)) {
+    showMessage('Not enough energy!');
+    return false;
+  }
+  const ore = state.mineNode.type;
+  state.inventory[ore] = (state.inventory[ore] || 0) + 1;
+  state.mineNode = null;
+  spendEnergy(MINE_ENERGY_PER_MINE);
+  showMessage(`Mined ${ore}!`);
+  gainExperience('mining', 12);
+  return true;
+}
+
+// Feature 21: Combat in mines - sword on monster reduces health
+function attackMonster() {
+  if (!state.inMine || !state.mineMonster) return false;
+  if (!canUseEnergy(MINE_ENERGY_PER_ATTACK)) {
+    showMessage('Not enough energy!');
+    return false;
+  }
+  state.mineMonster.hp -= 1;
+  spendEnergy(MINE_ENERGY_PER_ATTACK);
+  if (state.mineMonster.hp <= 0) {
+    state.mineMonster = null;
+    showMessage('Monster defeated!');
+  }
+  gainExperience('combat', 15);
+  return true;
+}
+
+// Feature 23: Smelting - smelt ore into bar using a furnace
+function smelt(oreType) {
+  const barMap = {
+    copperOre: 'copperBar',
+    ironOre: 'ironBar',
+    goldOre: 'goldBar',
+  };
+  const bar = barMap[oreType];
+  if (!bar) return false;
+  if ((state.inventory[oreType] || 0) < 1) return false;
+  state.inventory[oreType]--;
+  if (state.inventory[oreType] <= 0) delete state.inventory[oreType];
+  state.inventory[bar] = (state.inventory[bar] || 0) + 1;
+  showMessage(`Smelted ${bar}!`);
+  return true;
+}
+
+// Forageable wild items (original data)
+const FORAGE_ITEMS = {
+  wildRoot: { name: 'Wild Root', type: 'forage' },
+  springOnion: { name: 'Spring Onion', type: 'forage' },
+  berry: { name: 'Wild Berry', type: 'forage' },
+  mushroom: { name: 'Mushroom', type: 'forage' },
+};
+
+// Place forageable items on the farm
+function placeForageItems() {
+  const positions = [
+    { r: 3, c: 6, type: 'wildRoot' },
+    { r: 5, c: 9, type: 'berry' },
+    { r: 8, c: 4, type: 'mushroom' },
+    { r: 12, c: 10, type: 'springOnion' },
+    { r: 15, c: 2, type: 'berry' },
+  ];
+  for (const p of positions) {
+    const tile = state.grid[p.r][p.c];
+    if (!tile) continue;
+    state.forageItems.push({ r: p.r, c: p.c, type: p.type });
+  }
+}
+
+// Place fishing spots around the valley
+function placeFishingSpots() {
+  const positions = [
+    { r: 2, c: 15 },
+    { r: 8, c: 18 },
+    { r: 14, c: 16 },
+    { r: 18, c: 8 },
+  ];
+  for (const p of positions) {
+    state.fishingSpots.push({ r: p.r, c: p.c });
+  }
+}
+
+// Feature 24: Foraging - collect wild items around the valley
+function forage() {
+  const item = state.forageItems.find(
+    (f) => f.r === state.player.y && f.c === state.player.x
+  );
+  if (!item) return false;
+  const info = FORAGE_ITEMS[item.type];
+  state.inventory[item.type] = (state.inventory[item.type] || 0) + 1;
+  state.forageItems = state.forageItems.filter((f) => f !== item);
+  showMessage(`Foraged ${info.name}!`);
+  gainExperience('foraging', 6);
+  return true;
+}
+
+// Feature 25: Fishing - catch fish at a fishing spot
+function fish() {
+  const atSpot = state.fishingSpots.some(
+    (s) => s.r === state.player.y && s.c === state.player.x
+  );
+  if (!atSpot) {
+    showMessage('Not a fishing spot!');
+    return false;
+  }
+  if (!canUseEnergy(ENERGY_PER_FISH)) {
+    showMessage('Not enough energy!');
+    return false;
+  }
+  spendEnergy(ENERGY_PER_FISH);
+  state.inventory.fish = (state.inventory.fish || 0) + 1;
+  showMessage('Caught a fish!');
+  gainExperience('fishing', 7);
+  return true;
+}
+
 // Feature 1: Day/night cycle - new morning resets energy to max
 function nextDay() {
   state.day++;
@@ -476,6 +807,8 @@ function nextDay() {
       state.grid[r][c].watered = false;
     }
   }
+  // Feature 31: Spouse help - spouse waters at least one crop during the night
+  spouseNightlyHelp();
   advanceCropGrowth();
   collectMorningProducts();
   refreshTileColors();
@@ -608,11 +941,14 @@ function initPlantingKeys() {
 function init() {
   initThree();
   initGrid();
+  state.relationships = initRelationships();
   buildTileMeshes();
   initControls();
   initPlantingKeys();
   updateHUD();
   placeInitialDecorations();
+  placeForageItems();
+  placeFishingSpots();
   animate();
 }
 
@@ -678,6 +1014,35 @@ const ValleyLifeAPI = {
   addAnimal,
   feedAnimals,
   collectMorningProducts,
+  enterMine,
+  exitMine,
+  mineOre,
+  attackMonster,
+  smelt,
+  oreTierForFloor,
+  MINE_ENERGY_PER_ENTER,
+  MINE_ENERGY_PER_MINE,
+  MINE_ENERGY_PER_ATTACK,
+  ENERGY_PER_FISH,
+  FORAGE_ITEMS,
+  forage,
+  placeForageItems,
+  fish,
+  placeFishingSpots,
+  SKILLS,
+  SKILL_MAX_LEVEL,
+  gainExperience,
+  xpForNextLevel,
+  initSkills,
+  initRelationships,
+  VILLAGERS,
+  VILLAGER_POSITIONS,
+  MARRIAGE_RELATIONSHIP,
+  talkToVillager,
+  giveGift,
+  marryVillager,
+  spouseNightlyHelp,
+  haveChild,
 };
 
 if (typeof globalThis !== 'undefined') {
