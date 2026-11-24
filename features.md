@@ -6,7 +6,7 @@ Valley Life is an open-ended farm life simulation game inspired by Stardew Valle
 
 1. **Farm management** — Inherit a dilapidated farm outside Pelican Town and restore it by clearing land, tilling soil, planting seasonal crops, and watering them daily.
 2. **Crop system** — Plant seasonal seeds that grow over several days and must be harvested before the season changes.
-3. **Animal husbandry** — Build barns and coops to raise animals that produce goods such as eggs and milk.
+3. **Animal husbandry** — Build barns and coops to raise animals that produce goods such as eggs and milk. Supports multiple animal types: chickens (various colors), cows, goats, sheep, pigs, rabbits, ducks, dinosaurs, ostriches, turtles, cats, dogs, and horses.
 4. **Mining** — Explore a nearby cave system, break rocks with a pickaxe to collect ores, and fight monsters with a sword.
 5. **Foraging** — Collect wild items found around the valley.
 6. **Fishing** — Catch fish in rivers, lakes, and the ocean.

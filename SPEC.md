@@ -41,66 +41,68 @@ Each feature below has exactly one test that verifies that feature. Tests are wr
 | 15 | **Build barn** — Construct a barn to house cows and other livestock. | Building a barn adds a structure that can house a defined number of cows. |
 | 16 | **Animal products** — Animals produce goods such as eggs and milk daily when fed. | A fed chicken in a coop produces one egg each morning. |
 | 17 | **Animal feeding** — Animals must be fed daily to produce goods. | An unfed animal produces no goods that day. |
+| 18 | **Animal varieties** — The valley supports multiple animal types (chickens, cows, goats, sheep, pigs, rabbits, ducks, dinosaurs, ostriches, turtles, cats, dogs, horses). | Placing an ostrich in a barn registers the ostrich as a distinct animal type from a chicken. |
+
 
 ### 1.4 Mining
 
 | # | Feature | Test |
 |---|---------|------|
-| 18 | **Cave exploration** — Enter and explore the mine cave system. | Entering the mine places the player on the first mine floor. |
-| 19 | **Ore mining** — Break rocks with a pickaxe to collect ores. | Using a pickaxe on a mine rock node yields ore and may clear the node. |
-| 20 | **Combat in mines** — Fight monsters with a sword while mining. | Attacking a monster with a sword reduces its health; defeating it removes it from the floor. |
-| 21 | **Floor progression** — Deeper floors contain more valuable ores and stronger monsters. | Reaching floor 5 of the mine exposes ore nodes of a higher tier than floor 1. |
-| 22 | **Smelting** — Smelt ores into bars using a furnace. | Smelting copper ore in a furnace produces a copper bar. |
+| 19 | **Cave exploration** — Enter and explore the mine cave system. | Entering the mine places the player on the first mine floor. |
+| 20 | **Ore mining** — Break rocks with a pickaxe to collect ores. | Using a pickaxe on a mine rock node yields ore and may clear the node. |
+| 21 | **Combat in mines** — Fight monsters with a sword while mining. | Attacking a monster with a sword reduces its health; defeating it removes it from the floor. |
+| 22 | **Floor progression** — Deeper floors contain more valuable ores and stronger monsters. | Reaching floor 5 of the mine exposes ore nodes of a higher tier than floor 1. |
+| 23 | **Smelting** — Smelt ores into bars using a furnace. | Smelting copper ore in a furnace produces a copper bar. |
 
 ### 1.5 Foraging and fishing
 
 | # | Feature | Test |
 |---|---------|------|
-| 23 | **Foraging** — Collect wild items around the valley. | Interacting with a forage item on the ground adds it to the player's inventory. |
-| 24 | **Fishing** — Catch fish in rivers, lakes, and the ocean. | Completing the fishing minigame at a valid fishing spot adds a fish to the player's inventory. |
+| 24 | **Foraging** — Collect wild items around the valley. | Interacting with a forage item on the ground adds it to the player's inventory. |
+| 25 | **Fishing** — Catch fish in rivers, lakes, and the ocean. | Completing the fishing minigame at a valid fishing spot adds a fish to the player's inventory. |
 
 ### 1.6 Skills
 
 | # | Feature | Test |
 |---|---------|------|
-| 25 | **Skill leveling** — Gain experience in farming, foraging, fishing, mining, and combat by performing related actions. | Harvesting a crop increases farming experience; reaching the threshold levels up the farming skill. |
-| 26 | **Skill caps** — Each skill has a maximum level. | The farming skill cannot exceed its defined maximum level. |
+| 26 | **Skill leveling** — Gain experience in farming, foraging, fishing, mining, and combat by performing related actions. | Harvesting a crop increases farming experience; reaching the threshold levels up the farming skill. |
+| 27 | **Skill caps** — Each skill has a maximum level. | The farming skill cannot exceed its defined maximum level. |
 
 ### 1.7 Social and relationships
 
 | # | Feature | Test |
 |---|---------|------|
-| 27 | **NPC interaction** — Talk to townspeople. | Interacting with a villager displays their dialogue. |
-| 28 | **Gift giving** — Give gifts to villagers to build relationship points. | Giving a liked gift to a villager increases their relationship points by a positive amount. |
-| 29 | **Marriage** — Marry an eligible villager regardless of gender. | Marrying an eligible villager sets the player's spouse to that villager. |
-| 30 | **Spouse help** — A spouse helps with daily farm chores such as cooking, feeding animals, or watering crops. | After marriage, the spouse waters at least one crop on a farm tile during the night. |
-| 31 | **Children** — A married couple may choose to have children. | Choosing to have a child adds a child to the player's household. |
+| 28 | **NPC interaction** — Talk to townspeople. | Interacting with a villager displays their dialogue. |
+| 29 | **Gift giving** — Give gifts to villagers to build relationship points. | Giving a liked gift to a villager increases their relationship points by a positive amount. |
+| 30 | **Marriage** — Marry an eligible villager regardless of gender. | Marrying an eligible villager sets the player's spouse to that villager. |
+| 31 | **Spouse help** — A spouse helps with daily farm chores such as cooking, feeding animals, or watering crops. | After marriage, the spouse waters at least one crop on a farm tile during the night. |
+| 32 | **Children** — A married couple may choose to have children. | Choosing to have a child adds a child to the player's household. |
 
 ### 1.8 Community Center
 
 | # | Feature | Test |
 |---|---------|------|
-| 32 | **Bundles** — Complete bundles by collecting a set amount of goods. | Donating all required items for a bundle marks that bundle as complete. |
-| 33 | **Bundle rewards** — Completing bundles unlocks new areas and activities. | Completing the first bundle unlocks a new area of the valley. |
+| 33 | **Bundles** — Complete bundles by collecting a set amount of goods. | Donating all required items for a bundle marks that bundle as complete. |
+| 34 | **Bundle rewards** — Completing bundles unlocks new areas and activities. | Completing the first bundle unlocks a new area of the valley. |
 
 ### 1.9 Farm types
 
 | # | Feature | Test |
 |---|---------|------|
-| 34 | **Farm type selection** — Choose from several farm types at game start, each with a unique theme and benefits/drawbacks. | Selecting the "Forest" farm type starts the player with more foragable items on the farm than the "Standard" farm type. |
+| 35 | **Farm type selection** — Choose from several farm types at game start, each with a unique theme and benefits/drawbacks. | Selecting the "Forest" farm type starts the player with more foragable items on the farm than the "Standard" farm type. |
 
 ### 1.10 Multiplayer
 
 | # | Feature | Test |
 |---|---------|------|
-| 35 | **Online multiplayer** — Play online with other players. | Connecting a second client to a host session synchronizes the second player's position to the host. |
+| 36 | **Online multiplayer** — Play online with other players. | Connecting a second client to a host session synchronizes the second player's position to the host. |
 
 ### 1.11 Rendering and platform
 
 | # | Feature | Test |
 |---|---------|------|
-| 36 | **Top-down 3D rendering** — The game world is rendered in top-down perspective using three.js. | The game initializes a three.js Scene, PerspectiveCamera (or OrthographicCamera), and WebGLRenderer without throwing. |
-| 37 | **Browser execution** — The game runs in a web browser with no native dependencies. | Opening `index.html` in a browser loads and starts the game without requiring a build step or native install. |
+| 37 | **Top-down 3D rendering** — The game world is rendered in top-down perspective using three.js. | The game initializes a three.js Scene, PerspectiveCamera (or OrthographicCamera), and WebGLRenderer without throwing. |
+| 38 | **Browser execution** — The game runs in a web browser with no native dependencies. | Opening `index.html` in a browser loads and starts the game without requiring a build step or native install. |
 
 ---
 
@@ -126,3 +128,32 @@ Add the Community Center bundle system, multiple farm types, save/load, and onli
 - The game runs in the browser using three.js.
 - Each feature has exactly one test.
 - All documents and code are committed to Git.
+
+---
+
+## 4. Reference — Stardew Valley APK study (REA)
+
+The Stardew Valley APK (`stardew-valley-mod-1.6.15.3-an1.com.apk`, SHA-256 `060d5e5e8fba383cb205fa6ae60a35c9b2335d579c539f00f004c9495f7aea19`, ~388 MB) was studied with REA's static artifact inspection (no execution, no JADX decompilation available).
+
+### Observed facts (from shipped artifact, static inspection only)
+
+- **Format**: APK signed with v1/v2/v3 schemes; min SDK 24; signer is a self-signed test certificate (C=RU, O=A1, CN=A1), not the original ConcernedApe/Chucklefish signing identity.
+- **Content layout**: `assets/Content/` contains XNA `.xnb` content files organized into:
+  - `Animals/` — chickens (white, brown, blue, void, golden), cows (white, brown), goats, sheep, pigs, rabbits, ducks, dinosaurs, ostriches, turtles, cats, dogs, horses
+  - `Buildings/` — barn (Big/Deluxe), coop (Big/Deluxe), shed, slime hutch, fish pond, greenhouse, junimo hut, mill, shipping bin, silo, stable, obelisks, cabins
+  - `Characters/Dialogue/` — per-villager dialogue files (Abigail, Alex, Caroline, Clint, Demetrius, Dwarf, Emily, Evelyn, George, Gil, Gus, Haley, Harvey, Jodi, Kent, Krobus, Leah, Leo, Lewis, Linus, Marnie, Pam, Penny, Pierre, Robin, Sam, Sandy, Sebastian, Shane, Willy, Wizard) plus `MarriageDialogue*` for romanceable candidates
+- **Inventory**: 3,694 archive entries / 3,658 nodes; all hashes verified.
+
+### What this means for Valley Life
+
+These confirmed content categories map directly to the features in SPEC.md:
+- Animals → features 14–18 (coop/barn, products, feeding, varieties)
+- Buildings → farm structures (barn, coop, shed, slime hutch, greenhouse, etc.)
+- Characters/Dialogue → features 28–32 (NPC interaction, gift giving, marriage, spouse help, children)
+- Multiple marriage dialogue files → supports the "marry regardless of gender" feature (30)
+
+### Limitations
+
+- Static structural inspection only; no DEX decompilation (JADX not configured), no runtime execution, no adb/device involved.
+- Does not establish game logic, balance values, or runtime behavior; those remain design decisions for Valley Life, informed by but not copied from Stardew Valley.
+
