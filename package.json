@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "dependencies": {
+    "jsdom": "^31.0.1",
+    "three": "^0.160.0"
+  },
+  "scripts": {
+    "test": "node tests/features.test.js"
+  }
+}

@@ -155,6 +155,7 @@ function onWindowResize() {
 }
 
 function updatePlayerPosition() {
+  if (!playerMesh) return;
   const centerX = -(GRID_WIDTH * TILE_SIZE) / 2;
   const centerZ = -(GRID_HEIGHT * TILE_SIZE) / 2;
   const x = centerX + state.player.x * TILE_SIZE + TILE_SIZE / 2;
@@ -163,6 +164,7 @@ function updatePlayerPosition() {
 }
 
 function refreshTileColors() {
+  if (tileMeshes.size === 0) return;
   tileMeshes.forEach((mesh, key) => {
     const [r, c] = key.split(',').map(Number);
     const tile = state.grid[r][c];
@@ -178,8 +180,10 @@ function refreshTileColors() {
 
 // ============ UI ============
 function updateHUD() {
-  document.getElementById('day-display').textContent = `Day ${state.day}, ${SEASONS[state.seasonIndex]}`;
-  document.getElementById('energy-display').textContent = `Energy: ${state.energy}/${state.maxEnergy}`;
+  const dayEl = document.getElementById('day-display');
+  const energyEl = document.getElementById('energy-display');
+  if (dayEl) dayEl.textContent = `Day ${state.day}, ${SEASONS[state.seasonIndex]}`;
+  if (energyEl) energyEl.textContent = `Energy: ${state.energy}/${state.maxEnergy}`;
   document.querySelectorAll('#toolbar button').forEach((b) => {
     b.classList.toggle('active', b.id === `tool-${state.selectedTool}`);
   });
@@ -192,9 +196,11 @@ function setSelectedTool(tool) {
 
 function showMessage(text) {
   const el = document.getElementById('message');
-  el.textContent = text;
-  el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 1500);
+  if (el) {
+    el.textContent = text;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 1500);
+  }
 }
 
 // ============ Game Logic ============
@@ -522,8 +528,8 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-// Export for testing
-window.ValleyLife = {
+// Export for testing and browser
+const ValleyLifeAPI = {
   state,
   CROPS,
   SEEDS,
@@ -557,4 +563,11 @@ window.ValleyLife = {
   GRID_HEIGHT,
 };
 
-init();
+if (typeof globalThis !== 'undefined') {
+  globalThis.ValleyLife = ValleyLifeAPI;
+}
+
+// Only auto-init in a real browser environment (not under test)
+if (typeof document !== 'undefined' && !globalThis.__VALLEYLIFE_TEST__) {
+  init();
+}

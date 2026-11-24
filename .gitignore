@@ -5,3 +5,7 @@ stardew-valley-mod-1.6.15.3-an1.com.apk
 dist/
 build/
 *.local
+
+# Node dependencies
+node_modules/
+package-lock.json
