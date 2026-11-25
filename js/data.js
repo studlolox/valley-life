@@ -128,6 +128,46 @@ export const RECIPES = {
   agedCheese:  { name: 'Aged Cheese',   type: 'cooking',  ingredients: { milk: 1 },                energyRestore: 60, sellPrice: 50 },
   cloth:       { name: 'Woven Cloth',   type: 'crafting', ingredients: { wool: 1 },                energyRestore: 0,  sellPrice: 35 },
   furnace:     { name: 'Stone Furnace', type: 'crafting', ingredients: { copperOre: 5 },           energyRestore: 0,  sellPrice: 0 },
+  scarecrow:   { name: 'Scarecrow',     type: 'crafting', ingredients: { turnip: 1 },              energyRestore: 0,  sellPrice: 15 },
+  chest:       { name: 'Storage Chest', type: 'crafting', ingredients: { copperOre: 2 },           energyRestore: 0,  sellPrice: 20 },
+  sprinkler:   { name: 'Sprinkler',     type: 'crafting', ingredients: { copperBar: 1, ironBar: 1 }, energyRestore: 0, sellPrice: 60 },
+};
+
+// Weekdays & Tool Upgrades
+export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+export const TOOL_NAMES = {
+  hoe: 'Hoe',
+  water: 'Watering Can',
+  axe: 'Axe',
+  pickaxe: 'Pickaxe',
+  scythe: 'Scythe',
+  sword: 'Sword',
+  fishingRod: 'Fishing Rod',
+};
+
+export const TOOL_UPGRADE_TIERS = [
+  { level: 1, name: 'Copper', bar: 'copperBar', barsRequired: 3, goldCost: 150 },
+  { level: 2, name: 'Iron',   bar: 'ironBar',   barsRequired: 3, goldCost: 350 },
+  { level: 3, name: 'Gold',   bar: 'goldBar',   barsRequired: 3, goldCost: 700 },
+];
+
+// General Store Items (Tessa's Shop)
+export const GENERAL_STORE_ITEMS = {
+  hay:           { name: 'Animal Hay',     price: 10,  description: 'Feed for coop and barn animals.' },
+  roastedRoot:   { name: 'Roasted Root',   price: 35,  description: 'Warm snack that restores 45 Energy.', energyRestore: 45 },
+  berryPie:      { name: 'Berry Pie',      price: 65,  description: 'Sweet pastry that restores 75 Energy.', energyRestore: 75 },
+  flowerBouquet: { name: 'Flower Bouquet', price: 100, description: 'A romantic gift for a special villager.' },
+};
+
+// Museum Artifacts (Julian's Archive)
+export const MUSEUM_ARTIFACTS = {
+  copperOre:  { name: 'Copper Specimen',  description: 'Raw copper ore from upper Ironpeak Caverns.' },
+  ironOre:    { name: 'Iron Specimen',    description: 'Dense iron ore from mid-level caverns.' },
+  goldOre:    { name: 'Gold Specimen',    description: 'Gleaming gold ore from deep caverns.' },
+  seashell:   { name: 'Silverfin Shell',  description: 'A pearlescent shell from Silverfin Coast.' },
+  dinoEgg:    { name: 'Fossilized Egg',   description: 'An ancient speckled egg of unknown age.' },
+  ancientRelic:{ name: 'Valley Relic',    description: 'A carved stone emblem from Sunhollow history.' },
 };
 
 // 12 Original Named Villagers (preserving existing keys elder, baker, smith, farmer, tailor, librarian)

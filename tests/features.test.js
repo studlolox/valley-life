@@ -664,5 +664,32 @@ test('Feature 43: Cooking a recipe consumes ingredients and adds cooked dish', (
   assert(V.state.inventory.berryPie === 1, 'cooked berryPie should be in inventory');
 });
 
+// ---------- Feature 44: Tool upgrades ----------
+test('Feature 44: Upgrading a tool deducts Gold and bars and increments tool level', () => {
+  resetState();
+  V.state.toolLevels = { hoe: 0, water: 0, axe: 0, pickaxe: 0, scythe: 0, sword: 0, fishingRod: 0 };
+  V.state.money = 300;
+  V.state.inventory.copperBar = 3;
+  const upgraded = V.upgradeTool('hoe');
+  assert(upgraded === true, 'upgrading hoe to Copper should succeed');
+  assert(V.state.toolLevels.hoe === 1, 'hoe level should be 1');
+  assert(V.state.money === 150, `money should be 150 after 150G upgrade, got ${V.state.money}`);
+  assert(!V.state.inventory.copperBar, 'copper bars should be consumed');
+});
+
+// ---------- Feature 45: Shipping bin ledger ----------
+test('Feature 45: Queuing item in Shipping Bin pays Gold overnight and records summary', () => {
+  resetState();
+  V.state.shippingBin = {};
+  V.state.money = 100;
+  V.state.inventory.turnip = 2;
+  const queued = V.queueShipItem('turnip', 2);
+  assert(queued === true, 'queuing turnips in shipping bin should succeed');
+  assert(!V.state.inventory.turnip, 'turnips should move from inventory to bin');
+  V.nextDay();
+  assert(V.state.money === 120, `money should be 120 after overnight shipping, got ${V.state.money}`);
+  assert(V.state.lastDaySummary && V.state.lastDaySummary.totalGoldEarned === 20, 'day summary should record 20G earned');
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

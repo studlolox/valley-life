@@ -35,3 +35,4 @@ Valley Life is an open-ended farm life simulation game inspired by Stardew Valle
 - three.js for 3D rendering in the browser.
 - Vanilla JavaScript game logic.
 - Runs in a web browser without native dependencies.
+- **Economy, Quests, Events, Cooking, Upgrades & Shipping** — Buy seeds/animals/supplies, complete quests, view storyline events, unlock achievements, cook & craft, upgrade tools at Garrick's Smithy, and ship produce overnight via the Shipping Bin ledger.

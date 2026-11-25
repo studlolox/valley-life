@@ -113,6 +113,8 @@ Each feature below has exactly one test that verifies that feature. Tests are wr
 | 41 | **Storyline events** — Trigger narrative events and record seen events. | Triggering an unseen storyline event returns its script lines and marks it as seen. |
 | 42 | **Achievements** — Unlock player milestones based on progress. | Reaching an achievement condition unlocks that achievement once. |
 | 43 | **Cooking and crafting** — Cook food or craft items from inventory ingredients. | Cooking a recipe consumes its required ingredients and adds the cooked dish to inventory. |
+| 44 | **Tool upgrades** — Upgrade tools at Garrick's Smithy using Gold and smelted metal bars. | Upgrading a tool deducts the required Gold and bars and increments the tool's upgrade level. |
+| 45 | **Shipping bin ledger** — Queue goods in the Shipping Bin to be sold overnight for Gold with a morning summary. | Queuing an item in the Shipping Bin and sleeping adds its sell price to Gold and records it in the day summary. |
 
 ---
 

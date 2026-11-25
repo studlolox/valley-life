@@ -23,6 +23,11 @@ import {
   STORY_EVENTS,
   FESTIVALS,
   ACHIEVEMENTS,
+  WEEKDAYS,
+  TOOL_NAMES,
+  TOOL_UPGRADE_TIERS,
+  GENERAL_STORE_ITEMS,
+  MUSEUM_ARTIFACTS,
 } from './data.js';
 
 // ============ Game Constants ============
@@ -182,7 +187,20 @@ const state = {
   selectedBuilding: null,
   grid: [], // 2D array of tile objects
   player: { x: 0, y: 0, z: 0 },
+  playerName: 'Farmer',
   playerGender: 'male', // player's gender; marriage requires a different-gender spouse
+  playerAppearance: { hairColor: '#5C3A21', shirtColor: '#4169E1' },
+  currentZone: LOCATIONS.farm,
+  weather: 'Sunny',
+  health: 100,
+  maxHealth: 100,
+  toolLevels: { hoe: 0, water: 0, axe: 0, pickaxe: 0, scythe: 0, sword: 0, fishingRod: 0 },
+  selectedSeed: 'turnip',
+  selectedGift: null,
+  shippingBin: {},
+  lastDaySummary: null,
+  museumDonations: {},
+  gameStarted: false,
   isNight: false,
   timeOfDay: 6, // 6 = morning
   dayComplete: false,
@@ -209,35 +227,50 @@ function initGrid() {
 }
 
 // ============ three.js Setup ============
-let scene, camera, renderer, gridHelper;
+let scene, camera, renderer, gridHelper, floorMesh, hoverRingMesh;
 let playerMesh;
 const tileMeshes = new Map(); // key "r,c" -> mesh
+let cameraZoom = 22;
+const raycaster = new THREE.Raycaster();
+const pointerNDC = new THREE.Vector2();
+let hoveredTile = null;
+let uiRenderer = null;
+
+function setUIRenderer(rendererObj) {
+  uiRenderer = rendererObj;
+}
+
+function notifyUI(eventName, payload) {
+  if (uiRenderer && typeof uiRenderer[eventName] === 'function') {
+    uiRenderer[eventName](payload);
+  }
+}
 
 function initThree() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x87CEEB);
 
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(25, 28, 25);
+  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, cameraZoom, cameraZoom * 0.72);
   camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.getElementById('game-container').appendChild(renderer.domElement);
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
   scene.add(ambientLight);
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(10, 20, 10);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+  dirLight.position.set(12, 24, 10);
   scene.add(dirLight);
 
   // Floor grid
   const floorGeo = new THREE.PlaneGeometry(GRID_WIDTH * TILE_SIZE, GRID_HEIGHT * TILE_SIZE);
   const floorMat = new THREE.MeshStandardMaterial({ color: 0x7CFC00 });
-  const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.rotation.x = -Math.PI / 2;
-  scene.add(floor);
+  floorMesh = new THREE.Mesh(floorGeo, floorMat);
+  floorMesh.rotation.x = -Math.PI / 2;
+  scene.add(floorMesh);
 
   // Player
   playerMesh = new THREE.Mesh(
@@ -245,6 +278,18 @@ function initThree() {
     new THREE.MeshStandardMaterial({ color: 0x4169E1 })
   );
   scene.add(playerMesh);
+
+  // Hover tile highlight ring
+  const ringGeo = new THREE.RingGeometry(TILE_SIZE * 0.36, TILE_SIZE * 0.46, 4);
+  ringGeo.rotateZ(Math.PI / 4);
+  ringGeo.rotateX(-Math.PI / 2);
+  hoverRingMesh = new THREE.Mesh(
+    ringGeo,
+    new THREE.MeshBasicMaterial({ color: 0xFFE066, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+  );
+  hoverRingMesh.position.y = 0.04;
+  hoverRingMesh.visible = false;
+  scene.add(hoverRingMesh);
 
   // Grid helper for reference
   gridHelper = new THREE.GridHelper(GRID_WIDTH * TILE_SIZE, GRID_WIDTH, 0x444444, 0x222222);
@@ -330,6 +375,7 @@ function updateHUD() {
   document.querySelectorAll('#toolbar button').forEach((b) => {
     b.classList.toggle('active', b.id === `tool-${state.selectedTool}`);
   });
+  notifyUI('updateHUD');
 }
 
 function setSelectedTool(tool) {
@@ -337,13 +383,21 @@ function setSelectedTool(tool) {
   updateHUD();
 }
 
+function setSelectedSeed(seedKey) {
+  if (SEEDS[seedKey]) {
+    state.selectedSeed = seedKey;
+    updateHUD();
+  }
+}
+
 function showMessage(text) {
   const el = document.getElementById('message');
   if (el) {
     el.textContent = text;
     el.style.display = 'block';
-    setTimeout(() => { el.style.display = 'none'; }, 1500);
+    setTimeout(() => { el.style.display = 'none'; }, 1800);
   }
+  notifyUI('showToast', text);
 }
 
 // ============ Game Logic ============
@@ -401,6 +455,11 @@ function plantSeed(seedKey) {
   if (seed.season !== currentSeason) {
     showMessage(`Cannot plant ${seed.name} in ${currentSeason}.`);
     return false;
+  }
+  const seedInvKey = `${seedKey}Seed`;
+  if ((state.inventory[seedInvKey] || 0) > 0) {
+    state.inventory[seedInvKey]--;
+    if (state.inventory[seedInvKey] <= 0) delete state.inventory[seedInvKey];
   }
   tile.planted = seed.crop;
   tile.growth = 0;
@@ -876,29 +935,81 @@ function fish() {
 }
 
 // Feature 1: Day/night cycle - new morning resets energy to max
+function rollDailyWeather() {
+  const season = SEASONS[state.seasonIndex];
+  const r = Math.random();
+  if (season === 'Winter') return r < 0.35 ? 'Snowy' : 'Sunny';
+  if (r < 0.2) return 'Rainy';
+  if (r < 0.27) return 'Stormy';
+  return 'Sunny';
+}
+
+function processShippingBin() {
+  const shipped = [];
+  let totalGoldEarned = 0;
+  for (const [itemKey, qty] of Object.entries(state.shippingBin)) {
+    if (qty <= 0) continue;
+    const unitPrice =
+      ITEM_PRICES[itemKey] ??
+      CROPS[itemKey]?.sellPrice ??
+      FORAGE_ITEMS[itemKey]?.sellPrice ??
+      FISH_TYPES[itemKey]?.sellPrice ??
+      0;
+    if (unitPrice <= 0) continue;
+    const earned = unitPrice * qty;
+    totalGoldEarned += earned;
+    shipped.push({ itemKey, qty, unitPrice, earned });
+  }
+  if (totalGoldEarned > 0) {
+    state.money += totalGoldEarned;
+    unlockAchievement('firstShip');
+  }
+  state.shippingBin = {};
+  return { shipped, totalGoldEarned };
+}
+
 function nextDay() {
+  const shippingResult = processShippingBin();
   state.day++;
   if (state.day > DAYS_PER_SEASON) {
     state.day = 1;
     state.seasonIndex = (state.seasonIndex + 1) % SEASONS.length;
   }
   state.energy = state.maxEnergy;
+  state.health = state.maxHealth;
   state.isNight = false;
   state.timeOfDay = 6;
   state.dayComplete = false;
-  // Reset watering flags for new day
+  state.weather = rollDailyWeather();
+  // Reset watering flags for new day (rain auto-waters outdoor crops)
+  const isRaining = state.weather === 'Rainy' || state.weather === 'Stormy';
   for (let r = 0; r < GRID_HEIGHT; r++) {
     for (let c = 0; c < GRID_WIDTH; c++) {
-      state.grid[r][c].watered = false;
+      state.grid[r][c].watered = isRaining && state.grid[r][c].planted ? true : false;
     }
   }
   // Feature 31: Spouse help - spouse waters at least one crop during the night
   spouseNightlyHelp();
   advanceCropGrowth();
+  const invBefore = { ...state.inventory };
   collectMorningProducts();
+  const productsCollected = [];
+  for (const [k, v] of Object.entries(state.inventory)) {
+    const diff = v - (invBefore[k] || 0);
+    if (diff > 0) productsCollected.push({ itemKey: k, qty: diff });
+  }
+  state.lastDaySummary = {
+    day: state.day,
+    season: SEASONS[state.seasonIndex],
+    weather: state.weather,
+    shipped: shippingResult.shipped,
+    totalGoldEarned: shippingResult.totalGoldEarned,
+    productsCollected,
+  };
   refreshTileColors();
   updateHUD();
-  showMessage(`New day! Day ${state.day}, ${SEASONS[state.seasonIndex]}`);
+  notifyUI('onNewDay', state.lastDaySummary);
+  showMessage(`New day! Day ${state.day}, ${SEASONS[state.seasonIndex]} (${state.weather})`);
 }
 
 // Feature 2: Season system - advancing 28 days cycles seasons
@@ -1032,20 +1143,198 @@ function cookRecipe(recipeKey) {
   return true;
 }
 
+// Feature 44: Tool Upgrades at Garrick's Smithy
+function upgradeTool(toolKey) {
+  if (!TOOL_NAMES[toolKey]) return false;
+  const currentLevel = state.toolLevels[toolKey] || 0;
+  const tier = TOOL_UPGRADE_TIERS.find((t) => t.level === currentLevel + 1);
+  if (!tier) {
+    showMessage(`${TOOL_NAMES[toolKey]} is already max level!`);
+    return false;
+  }
+  if (state.money < tier.goldCost) {
+    showMessage(`Need ${tier.goldCost}G to upgrade!`);
+    return false;
+  }
+  if ((state.inventory[tier.bar] || 0) < tier.barsRequired) {
+    showMessage(`Need ${tier.barsRequired} ${tier.bar}!`);
+    return false;
+  }
+  state.money -= tier.goldCost;
+  state.inventory[tier.bar] -= tier.barsRequired;
+  if (state.inventory[tier.bar] <= 0) delete state.inventory[tier.bar];
+  state.toolLevels[toolKey] = tier.level;
+  updateHUD();
+  showMessage(`Upgraded ${TOOL_NAMES[toolKey]} to ${tier.name}!`);
+  return true;
+}
+
+// Feature 45: Shipping Bin queue (pays out overnight via processShippingBin)
+function queueShipItem(itemKey, qty = 1) {
+  if (!itemKey || qty <= 0) return false;
+  if ((state.inventory[itemKey] || 0) < qty) return false;
+  const unitPrice =
+    ITEM_PRICES[itemKey] ??
+    CROPS[itemKey]?.sellPrice ??
+    FORAGE_ITEMS[itemKey]?.sellPrice ??
+    FISH_TYPES[itemKey]?.sellPrice ??
+    0;
+  if (unitPrice <= 0) return false;
+  state.inventory[itemKey] -= qty;
+  if (state.inventory[itemKey] <= 0) delete state.inventory[itemKey];
+  state.shippingBin[itemKey] = (state.shippingBin[itemKey] || 0) + qty;
+  updateHUD();
+  showMessage(`Placed ${qty} ${itemKey} in Shipping Bin.`);
+  return true;
+}
+
+// General Store & Ranch purchases
+function buyItem(itemKey, qty = 1) {
+  const item = GENERAL_STORE_ITEMS[itemKey];
+  if (!item || qty <= 0) return false;
+  const cost = item.price * qty;
+  if (state.money < cost) {
+    showMessage('Not enough Gold!');
+    return false;
+  }
+  state.money -= cost;
+  state.inventory[itemKey] = (state.inventory[itemKey] || 0) + qty;
+  updateHUD();
+  showMessage(`Bought ${qty} ${item.name}.`);
+  return true;
+}
+
+function buyAnimal(type, buildingIndex = null) {
+  const animal = ANIMALS[type];
+  if (!animal) return false;
+  if (state.money < animal.buyPrice) {
+    showMessage('Not enough Gold!');
+    return false;
+  }
+  if (animal.housing === 'pet') {
+    state.money -= animal.buyPrice;
+    state.animals.push({ type, fed: true });
+    unlockAchievement('firstAnimal');
+    updateHUD();
+    showMessage(`Adopted a ${animal.name}!`);
+    return true;
+  }
+  let targetIdx = buildingIndex;
+  if (targetIdx === null || targetIdx === undefined) {
+    targetIdx = state.buildings.findIndex(
+      (b) => (!b.houses || b.houses.includes(type)) && b.animals.length < b.capacity
+    );
+  }
+  if (targetIdx < 0 || !addAnimal(type, targetIdx)) {
+    showMessage(`No ${animal.housing} with space for ${animal.name}!`);
+    return false;
+  }
+  state.money -= animal.buyPrice;
+  unlockAchievement('firstAnimal');
+  updateHUD();
+  showMessage(`Bought a ${animal.name}!`);
+  return true;
+}
+
+function donateToMuseum(itemKey) {
+  if (!MUSEUM_ARTIFACTS[itemKey]) return false;
+  if (state.museumDonations[itemKey]) return false;
+  if ((state.inventory[itemKey] || 0) < 1) return false;
+  state.inventory[itemKey]--;
+  if (state.inventory[itemKey] <= 0) delete state.inventory[itemKey];
+  state.museumDonations[itemKey] = { donatedDay: state.day };
+  state.money += 25;
+  updateHUD();
+  showMessage(`Donated ${MUSEUM_ARTIFACTS[itemKey].name} to the Museum! (+25G)`);
+  return true;
+}
+
+function startNewGame(options = {}) {
+  const farmTypeKey = options.farmType && FARM_TYPES[options.farmType] ? options.farmType : 'standard';
+  const farmType = FARM_TYPES[farmTypeKey];
+  selectFarmType(farmTypeKey);
+  state.day = 1;
+  state.seasonIndex = 0;
+  state.energy = MAX_ENERGY;
+  state.maxEnergy = MAX_ENERGY;
+  state.health = state.maxHealth;
+  state.money = 500;
+  state.resources = { wood: farmType.startingWood, stone: farmType.startingStone };
+  state.inventory = { turnipSeed: 6, hay: 4, roastedRoot: 2 };
+  state.buildings = [];
+  state.animals = [];
+  state.mineFloor = 1;
+  state.inMine = false;
+  state.mineNode = null;
+  state.mineMonster = null;
+  state.forageItems = [];
+  state.fishingSpots = [];
+  state.skills = initSkills();
+  state.relationships = initRelationships();
+  state.spouse = null;
+  state.children = [];
+  state.quests = {};
+  state.seenEvents = {};
+  state.achievements = {};
+  state.toolLevels = { hoe: 0, water: 0, axe: 0, pickaxe: 0, scythe: 0, sword: 0, fishingRod: 0 };
+  state.selectedSeed = 'turnip';
+  state.selectedGift = null;
+  state.shippingBin = {};
+  state.lastDaySummary = null;
+  state.museumDonations = {};
+  state.playerName = (options.playerName || 'Farmer').trim() || 'Farmer';
+  state.playerGender = options.gender === 'female' ? 'female' : 'male';
+  state.playerAppearance = {
+    hairColor: options.hairColor || '#5C3A21',
+    shirtColor: options.shirtColor || '#4169E1',
+  };
+  state.player = { x: 0, y: 0, z: 0 };
+  state.weather = 'Sunny';
+  state.timeOfDay = 6;
+  state.isNight = false;
+  state.gameStarted = true;
+  if (playerMesh && playerMesh.material) {
+    playerMesh.material.color.set(state.playerAppearance.shirtColor);
+  }
+  initGrid();
+  placeInitialDecorations();
+  placeForageItems();
+  // Add extra starting forage based on chosen farm type
+  const extraForage = Math.max(0, farmType.startingForage - state.forageItems.length);
+  for (let i = 0; i < extraForage; i++) {
+    state.forageItems.push({ r: 4 + i * 2, c: 7 + (i % 4), type: 'mushroom' });
+  }
+  placeFishingSpots();
+  acceptQuest('clearLand');
+  refreshTileColors();
+  updatePlayerPosition();
+  updateHUD();
+  notifyUI('onGameStarted');
+  return true;
+}
+
 // Feature 5: Save/load - game state persists
-function saveGame() {
-  const saveData = {
+function buildSavePayload() {
+  return {
     day: state.day,
     seasonIndex: state.seasonIndex,
     energy: state.energy,
     maxEnergy: state.maxEnergy,
+    health: state.health,
+    maxHealth: state.maxHealth,
     money: state.money,
     resources: state.resources,
     inventory: state.inventory,
     selectedTool: state.selectedTool,
+    selectedSeed: state.selectedSeed,
+    selectedGift: state.selectedGift,
     grid: state.grid,
     player: state.player,
+    playerName: state.playerName,
     playerGender: state.playerGender,
+    playerAppearance: state.playerAppearance,
+    currentZone: state.currentZone,
+    weather: state.weather,
     isNight: state.isNight,
     timeOfDay: state.timeOfDay,
     buildings: state.buildings,
@@ -1059,10 +1348,66 @@ function saveGame() {
     quests: state.quests,
     seenEvents: state.seenEvents,
     achievements: state.achievements,
+    toolLevels: state.toolLevels,
+    shippingBin: state.shippingBin,
+    museumDonations: state.museumDonations,
     unlockedAreas: { ...unlockedAreas },
     selectedFarmType,
   };
-  localStorage.setItem('valleylife_save', JSON.stringify(saveData));
+}
+
+function applySavePayload(data) {
+  state.day = data.day;
+  state.seasonIndex = data.seasonIndex;
+  state.energy = data.energy;
+  state.maxEnergy = data.maxEnergy;
+  if (data.health !== undefined) state.health = data.health;
+  if (data.maxHealth !== undefined) state.maxHealth = data.maxHealth;
+  state.money = data.money;
+  if (data.resources) state.resources = data.resources;
+  state.inventory = data.inventory || {};
+  state.selectedTool = data.selectedTool || 'hoe';
+  if (data.selectedSeed) state.selectedSeed = data.selectedSeed;
+  if (data.selectedGift !== undefined) state.selectedGift = data.selectedGift;
+  state.grid = data.grid;
+  state.player = data.player || { x: 0, y: 0, z: 0 };
+  if (data.playerName) state.playerName = data.playerName;
+  if (data.playerGender) state.playerGender = data.playerGender;
+  if (data.playerAppearance) state.playerAppearance = data.playerAppearance;
+  if (data.currentZone) state.currentZone = data.currentZone;
+  if (data.weather) state.weather = data.weather;
+  state.isNight = data.isNight || false;
+  state.timeOfDay = data.timeOfDay || 6;
+  if (data.buildings) state.buildings = data.buildings;
+  if (data.animals) state.animals = data.animals;
+  if (data.skills) state.skills = data.skills;
+  if (data.relationships) state.relationships = data.relationships;
+  state.spouse = data.spouse !== undefined ? data.spouse : null;
+  if (data.children) state.children = data.children;
+  if (data.forageItems) state.forageItems = data.forageItems;
+  if (data.fishingSpots) state.fishingSpots = data.fishingSpots;
+  if (data.quests) state.quests = data.quests;
+  if (data.seenEvents) state.seenEvents = data.seenEvents;
+  if (data.achievements) state.achievements = data.achievements;
+  if (data.toolLevels) state.toolLevels = data.toolLevels;
+  if (data.shippingBin) state.shippingBin = data.shippingBin;
+  if (data.museumDonations) state.museumDonations = data.museumDonations;
+  if (data.unlockedAreas) {
+    Object.keys(unlockedAreas).forEach((k) => delete unlockedAreas[k]);
+    Object.assign(unlockedAreas, data.unlockedAreas);
+  }
+  if (data.selectedFarmType) selectedFarmType = data.selectedFarmType;
+  state.gameStarted = true;
+  if (playerMesh && playerMesh.material && state.playerAppearance?.shirtColor) {
+    playerMesh.material.color.set(state.playerAppearance.shirtColor);
+  }
+  refreshTileColors();
+  updatePlayerPosition();
+  updateHUD();
+}
+
+function saveGame() {
+  localStorage.setItem('valleylife_save', JSON.stringify(buildSavePayload()));
   showMessage('Game saved.');
 }
 
@@ -1073,40 +1418,9 @@ function loadGame() {
     return false;
   }
   try {
-    const data = JSON.parse(raw);
-    state.day = data.day;
-    state.seasonIndex = data.seasonIndex;
-    state.energy = data.energy;
-    state.maxEnergy = data.maxEnergy;
-    state.money = data.money;
-    if (data.resources) state.resources = data.resources;
-    state.inventory = data.inventory || {};
-    state.selectedTool = data.selectedTool || 'hoe';
-    state.grid = data.grid;
-    state.player = data.player || { x: 0, y: 0, z: 0 };
-    if (data.playerGender) state.playerGender = data.playerGender;
-    state.isNight = data.isNight || false;
-    state.timeOfDay = data.timeOfDay || 6;
-    if (data.buildings) state.buildings = data.buildings;
-    if (data.animals) state.animals = data.animals;
-    if (data.skills) state.skills = data.skills;
-    if (data.relationships) state.relationships = data.relationships;
-    state.spouse = data.spouse !== undefined ? data.spouse : null;
-    if (data.children) state.children = data.children;
-    if (data.forageItems) state.forageItems = data.forageItems;
-    if (data.fishingSpots) state.fishingSpots = data.fishingSpots;
-    if (data.quests) state.quests = data.quests;
-    if (data.seenEvents) state.seenEvents = data.seenEvents;
-    if (data.achievements) state.achievements = data.achievements;
-    if (data.unlockedAreas) {
-      Object.keys(unlockedAreas).forEach((k) => delete unlockedAreas[k]);
-      Object.assign(unlockedAreas, data.unlockedAreas);
-    }
-    if (data.selectedFarmType) selectedFarmType = data.selectedFarmType;
-    refreshTileColors();
-    updatePlayerPosition();
-    updateHUD();
+    applySavePayload(JSON.parse(raw));
     showMessage('Game loaded.');
+    notifyUI('onGameStarted');
     return true;
   } catch (e) {
     showMessage('Load failed.');
@@ -1114,11 +1428,131 @@ function loadGame() {
   }
 }
 
+function exportSaveJSON() {
+  return JSON.stringify(buildSavePayload(), null, 2);
+}
+
+function importSaveJSON(jsonString) {
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (!parsed || !Array.isArray(parsed.grid) || typeof parsed.day !== 'number') {
+      return false;
+    }
+    applySavePayload(parsed);
+    saveGame();
+    notifyUI('onGameStarted');
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // ============ Controls ============
+function screenToGrid(clientX, clientY) {
+  if (!renderer || !camera || !floorMesh) return null;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+  const hits = raycaster.intersectObject(floorMesh);
+  if (hits.length === 0) return null;
+  const pt = hits[0].point;
+  const centerX = -(GRID_WIDTH * TILE_SIZE) / 2;
+  const centerZ = -(GRID_HEIGHT * TILE_SIZE) / 2;
+  const c = Math.floor((pt.x - centerX) / TILE_SIZE);
+  const r = Math.floor((pt.z - centerZ) / TILE_SIZE);
+  if (r < 0 || r >= GRID_HEIGHT || c < 0 || c >= GRID_WIDTH) return null;
+  return { r, c };
+}
+
+function updateHoverRing(tilePos) {
+  if (!hoverRingMesh) return;
+  if (!tilePos) {
+    hoverRingMesh.visible = false;
+    return;
+  }
+  const centerX = -(GRID_WIDTH * TILE_SIZE) / 2;
+  const centerZ = -(GRID_HEIGHT * TILE_SIZE) / 2;
+  hoverRingMesh.position.set(
+    centerX + tilePos.c * TILE_SIZE + TILE_SIZE / 2,
+    0.04,
+    centerZ + tilePos.r * TILE_SIZE + TILE_SIZE / 2
+  );
+  hoverRingMesh.visible = true;
+}
+
+function interactOrUseAt(r, c) {
+  const dr = Math.abs(r - state.player.y);
+  const dc = Math.abs(c - state.player.x);
+  if (dr > 1 || dc > 1) {
+    // Step 1 tile toward clicked tile
+    if (r < state.player.y) state.player.y--;
+    else if (r > state.player.y) state.player.y++;
+    if (c < state.player.x) state.player.x--;
+    else if (c > state.player.x) state.player.x++;
+    updatePlayerPosition();
+    return false;
+  }
+  // Move player to adjacent clicked tile to perform action
+  state.player.y = r;
+  state.player.x = c;
+  updatePlayerPosition();
+
+  // Check villager at tile
+  const talked = talkToVillager();
+  if (talked) {
+    notifyUI('openDialogue', { text: talked });
+    return true;
+  }
+  // Check forage at tile
+  if (forage()) return true;
+  // Check mature crop harvest
+  const tile = getTile(r, c);
+  if (tile && tile.planted && tile.growth >= 1) {
+    return harvestTile();
+  }
+  return useTool();
+}
+
 function initControls() {
-  // Movement
   window.addEventListener('keydown', (e) => {
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     const key = e.key.toLowerCase();
+
+    if (key === 'escape') {
+      notifyUI('toggleModal', 'pause');
+      return;
+    }
+    if (!state.gameStarted && typeof uiRenderer === 'object' && uiRenderer !== null) {
+      return;
+    }
+    if (key === 'i' || key === 'tab') {
+      e.preventDefault();
+      notifyUI('toggleModal', 'inventory');
+      return;
+    }
+    if (key === 'q') {
+      notifyUI('toggleModal', 'quests');
+      return;
+    }
+    if (key === 'b') {
+      notifyUI('toggleModal', 'bundles');
+      return;
+    }
+    if (key === 'k') {
+      notifyUI('toggleModal', 'skills');
+      return;
+    }
+    if (key === 'p') {
+      notifyUI('toggleModal', 'social');
+      return;
+    }
+
+    if (uiRenderer && typeof uiRenderer.isAnyModalOpen === 'function' && uiRenderer.isAnyModalOpen()) {
+      return;
+    }
+
     let moved = false;
     if (key === 'arrowup' || key === 'w') { if (state.player.y > 0) { state.player.y--; moved = true; } }
     if (key === 'arrowdown' || key === 's') { if (state.player.y < GRID_HEIGHT - 1) { state.player.y++; moved = true; } }
@@ -1126,45 +1560,89 @@ function initControls() {
     if (key === 'arrowright' || key === 'd') { if (state.player.x < GRID_WIDTH - 1) { state.player.x++; moved = true; } }
     if (moved) {
       updatePlayerPosition();
+      updateHUD();
     }
-    // Tool action
-    if (key === ' ') { // spacebar = use tool
-      useTool();
+    if (key === ' ' || key === 'e') {
+      e.preventDefault();
+      const talked = talkToVillager();
+      if (talked) {
+        notifyUI('openDialogue', { text: talked });
+      } else if (!forage()) {
+        useTool();
+      }
     }
+    if (key === 'h') harvestTile();
+    if (key === 'n') nextDay();
   });
 
-  // Tool selection buttons
-  document.getElementById('tool-hoe').addEventListener('click', () => setSelectedTool('hoe'));
-  document.getElementById('tool-water').addEventListener('click', () => setSelectedTool('water'));
-  document.getElementById('tool-axe').addEventListener('click', () => setSelectedTool('axe'));
-  document.getElementById('tool-scythe').addEventListener('click', () => setSelectedTool('scythe'));
+  // Mouse hover & click raycast
+  if (renderer && renderer.domElement) {
+    renderer.domElement.addEventListener('mousemove', (e) => {
+      hoveredTile = screenToGrid(e.clientX, e.clientY);
+      updateHoverRing(hoveredTile);
+    });
+    renderer.domElement.addEventListener('click', (e) => {
+      if (uiRenderer && typeof uiRenderer.isAnyModalOpen === 'function' && uiRenderer.isAnyModalOpen()) return;
+      const pos = screenToGrid(e.clientX, e.clientY);
+      if (pos) interactOrUseAt(pos.r, pos.c);
+    });
+    renderer.domElement.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      cameraZoom = Math.max(12, Math.min(44, cameraZoom + (e.deltaY > 0 ? 2 : -2)));
+    }, { passive: false });
+  }
+
+  // Legacy toolbar buttons (if present)
+  document.getElementById('tool-hoe')?.addEventListener('click', () => setSelectedTool('hoe'));
+  document.getElementById('tool-water')?.addEventListener('click', () => setSelectedTool('water'));
+  document.getElementById('tool-axe')?.addEventListener('click', () => setSelectedTool('axe'));
+  document.getElementById('tool-scythe')?.addEventListener('click', () => setSelectedTool('scythe'));
 }
 
 function useTool() {
   switch (state.selectedTool) {
-    case 'hoe': tillTile(); break;
-    case 'water': waterTile(); break;
-    case 'axe': chopTile(); break;
-    case 'scythe': scytheTile(); break;
+    case 'hoe': return tillTile();
+    case 'water': return waterTile();
+    case 'axe': return chopTile();
+    case 'pickaxe': return state.inMine ? mineOre() : showMessage('Use Pickaxe in Ironpeak Caverns!');
+    case 'scythe': return scytheTile();
+    case 'sword': return state.inMine ? attackMonster() : showMessage('Use Sword in Ironpeak Caverns!');
+    case 'fishingRod': return fish();
+    case 'seed': return plantSeed(state.selectedSeed);
+    case 'food': {
+      const foodKey = Object.keys(state.inventory).find(
+        (k) => (CROPS[k]?.energyRestore || FORAGE_ITEMS[k]?.energyRestore || RECIPES[k]?.energyRestore || GENERAL_STORE_ITEMS[k]?.energyRestore) > 0
+      );
+      if (!foodKey) { showMessage('No food in inventory!'); return false; }
+      const restore = CROPS[foodKey]?.energyRestore || FORAGE_ITEMS[foodKey]?.energyRestore || RECIPES[foodKey]?.energyRestore || GENERAL_STORE_ITEMS[foodKey]?.energyRestore || 15;
+      return eatFood(foodKey, restore);
+    }
+    case 'gift': {
+      const villagerKey = Object.keys(VILLAGER_POSITIONS).find(
+        (k) => VILLAGER_POSITIONS[k].r === state.player.y && VILLAGER_POSITIONS[k].c === state.player.x
+      );
+      if (!villagerKey) { showMessage('Stand next to a villager to give a gift!'); return false; }
+      const giftKey = state.selectedGift || Object.keys(state.inventory)[0];
+      if (!giftKey) { showMessage('No item to gift!'); return false; }
+      return giveGift(villagerKey, giftKey);
+    }
+    default: return false;
   }
 }
 
-// Planting via number keys 1-4 for seed types
+// Hotbar keys 1-9, 0
 function initPlantingKeys() {
-  const seedKeys = Object.keys(SEEDS);
+  const hotbarTools = ['hoe', 'water', 'axe', 'pickaxe', 'scythe', 'sword', 'fishingRod', 'seed', 'food', 'gift'];
   window.addEventListener('keydown', (e) => {
-    const idx = parseInt(e.key, 10);
-    if (!isNaN(idx) && idx >= 1 && idx <= seedKeys.length) {
-      plantSeed(seedKeys[idx - 1]);
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (uiRenderer && typeof uiRenderer.isAnyModalOpen === 'function' && uiRenderer.isAnyModalOpen()) return;
+    const key = e.key;
+    if (key >= '1' && key <= '9') {
+      setSelectedTool(hotbarTools[parseInt(key, 10) - 1]);
+    } else if (key === '0') {
+      setSelectedTool(hotbarTools[9]);
     }
-  });
-  // 'h' to harvest
-  window.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'h') harvestTile();
-  });
-  // 'n' for next day
-  window.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'n') nextDay();
   });
 }
 
@@ -1200,8 +1678,18 @@ function placeInitialDecorations() {
   refreshTileColors();
 }
 
+const _cameraTarget = new THREE.Vector3();
 function animate() {
   requestAnimationFrame(animate);
+  if (playerMesh && camera) {
+    _cameraTarget.set(
+      playerMesh.position.x,
+      cameraZoom,
+      playerMesh.position.z + cameraZoom * 0.72
+    );
+    camera.position.lerp(_cameraTarget, 0.12);
+    camera.lookAt(playerMesh.position.x, 0, playerMesh.position.z);
+  }
   renderer.render(scene, camera);
 }
 
@@ -1315,6 +1803,25 @@ const ValleyLifeAPI = {
   unlockAchievement,
   hasAchievement,
   cookRecipe,
+  // Phase 2 UI, Economy, Upgrades & Save/Load (Features 44-45)
+  WEEKDAYS,
+  TOOL_NAMES,
+  TOOL_UPGRADE_TIERS,
+  GENERAL_STORE_ITEMS,
+  MUSEUM_ARTIFACTS,
+  setUIRenderer,
+  setSelectedSeed,
+  startNewGame,
+  upgradeTool,
+  queueShipItem,
+  processShippingBin,
+  buyItem,
+  buyAnimal,
+  donateToMuseum,
+  exportSaveJSON,
+  importSaveJSON,
+  useTool,
+  interactOrUseAt,
 };
 
 if (typeof globalThis !== 'undefined') {
