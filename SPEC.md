@@ -74,7 +74,7 @@ Each feature below has exactly one test that verifies that feature. Tests are wr
 |---|---------|------|
 | 28 | **NPC interaction** — Talk to townspeople. | Interacting with a villager displays their dialogue. |
 | 29 | **Gift giving** — Give gifts to villagers to build relationship points. | Giving a liked gift to a villager increases their relationship points by a positive amount. |
-| 30 | **Marriage** — Marry an eligible villager regardless of gender. | Marrying an eligible villager sets the player's spouse to that villager. |
+| 30 | **Marriage** — Marry an eligible villager of a different gender; relationship points must reach the threshold. | Marrying an eligible villager of a different gender sets the player's spouse to that villager; marrying a villager of the same gender is rejected. |
 | 31 | **Spouse help** — A spouse helps with daily farm chores such as cooking, feeding animals, or watering crops. | After marriage, the spouse waters at least one crop on a farm tile during the night. |
 | 32 | **Children** — A married couple may choose to have children. | Choosing to have a child adds a child to the player's household. |
 

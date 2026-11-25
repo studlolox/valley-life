@@ -156,13 +156,15 @@ function gainExperience(skill, amount) {
 }
 
 // Villager data for social relationships (original data, renamed characters)
+// gender: 'male' or 'female'. Marriage is only allowed between villagers of
+// different genders (see marryVillager).
 const VILLAGERS = {
-  elder:   { name: 'Village Elder',   likedGift: 'copperBar', marriageable: false },
-  baker:   { name: 'Baker',           likedGift: 'wheat',     marriageable: true },
-  smith:   { name: 'Smith',           likedGift: 'ironBar',   marriageable: true },
-  farmer:  { name: 'Farmhand',        likedGift: 'turnip',    marriageable: true },
-  tailor:  { name: 'Tailor',          likedGift: 'cloth',     marriageable: true },
-  librarian: { name: 'Librarian',     likedGift: 'goldBar',   marriageable: true },
+  elder:   { name: 'Village Elder',   gender: 'male',   likedGift: 'copperBar', marriageable: false },
+  baker:   { name: 'Baker',           gender: 'female', likedGift: 'wheat',     marriageable: true },
+  smith:   { name: 'Smith',           gender: 'male',   likedGift: 'ironBar',   marriageable: true },
+  farmer:  { name: 'Farmhand',        gender: 'female', likedGift: 'turnip',    marriageable: true },
+  tailor:  { name: 'Tailor',          gender: 'female', likedGift: 'cloth',     marriageable: true },
+  librarian: { name: 'Librarian',     gender: 'male',   likedGift: 'goldBar',   marriageable: true },
 };
 
 // Relationship points needed to marry
@@ -258,6 +260,7 @@ const state = {
   selectedBuilding: null,
   grid: [], // 2D array of tile objects
   player: { x: 0, y: 0, z: 0 },
+  playerGender: 'male', // player's gender; marriage requires a different-gender spouse
   isNight: false,
   timeOfDay: 6, // 6 = morning
   dayComplete: false,
@@ -725,6 +728,8 @@ function marryVillager(villagerKey) {
   const rel = state.relationships[villagerKey];
   if (!rel || rel.points < MARRIAGE_RELATIONSHIP) return false;
   if (villager.married) return false; // already married to someone else
+  // Marriage is only allowed between different genders.
+  if (villager.gender === state.playerGender) return false;
   state.spouse = villagerKey;
   villager.married = true;
   showMessage(`You married ${villager.name}!`);

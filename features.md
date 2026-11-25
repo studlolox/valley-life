@@ -15,7 +15,7 @@ Valley Life is an open-ended farm life simulation game inspired by Stardew Valle
 9. **Energy system** — Each morning begins with a full energy bar that decreases as tasks are performed; replenish by eating food.
 10. **Time system** — Time is divided into day-length segments across four 28-day seasons; each morning starts with full energy.
 11. **Relationships** — Interact with townspeople and give gifts to build relationships over time.
-12. **Marriage and family** — Marry one of the eligible townspeople regardless of gender; the spouse can help with daily farm chores, and the couple may choose to have children.
+12. **Marriage and family** — Marry one of the eligible townspeople of a different gender; relationship points must reach a threshold. The spouse can help with daily farm chores, and the couple may choose to have children.
 13. **Community Center bundles** — Complete bundles by collecting a set amount of goods and delivering them to the Community Center to unlock new areas and activities.
 14. **Farm types** — Choose from several farm types, each with a unique theme and different benefits/drawbacks that help focus on upgrading different skills faster.
 15. **Multiplayer** — Play online with other players (added as a post-release feature).

@@ -233,17 +233,69 @@ Fishing spots are placed around the valley (rivers, lakes, ocean). Completing th
 
 **Rule:** Selecting the Forest farm type starts the player with more forageable items than the Standard farm type. Each type has a unique theme and different benefits/drawbacks.
 
+## 16. Reference — Stardew Valley APK Dialogue / Story Content (extracted for comparison only)
+
+The Stardew Valley APK (`stardew-valley-mod-1.6.15.3-an1.com.apk`, ~370 MB) stores its dialogue and story content as **XNA `.xnb` binary files** under:
+
+- `assets/Content/Characters/Dialogue/<Name>.xnb` — per-character dialogue (660 dialogue files across locales; 52 English/default files)
+- `assets/Content/Characters/Dialogue/MarriageDialogue<Name>.xnb` — marriage/romance dialogue per romanceable candidate
+- `assets/Content/Strings/1_6_Strings.xnb` — general game strings (events, mail, UI text)
+
+These are **binary XNB content files**, not plain text. REA recovered readable printable-string fragments from them (the XNB format interleaves string data with length prefixes and object references, so recovery is partial and fragmented). No full dialogue lines were reconstructed; the fragments below are shown only to illustrate the *kinds* of story/dialogue content present in the reference game.
+
+### Observed English dialogue fragments (Abigail)
+- Introductions: "Oh, that's right... I heard someone new was moving onto the old farm."
+- Flower dance: "Hey, sure. Let's do it. We can be embarrassed together."
+- Birthday (positive): "Thanks, @! This is so nice!"
+- Disliked gift: "it's, uh... *sniff*"
+- StardropTea: "Wow! ... so beautiful, like an amethyst"
+- Journal: "my favorite magazine! My Dad won't let me have a subscription to get it on the black market"
+- Community Center: "I snuck into the community center last night... haunted"
+
+### Observed English dialogue fragments (Alex)
+- Introduction: "Oh, hey. So you're the new guy, huh? Cool. I think we're going to get along great. I'm Alex."
+- Birthday (loved): "Aw yeah, that's good stuff... Thanks for the gift, @."
+- Marriage: "I never had many friends in town... I sometimes wonder how I'd end up if you moved here." / "now that I'm a married guy!"
+
+### Observed English dialogue fragments (Caroline)
+- Introduction: "Hello! You must be @, the new farmer. I'm Caroline. My husband runs the general store here. And have you met my daughter, Abigail? She's the pale one with purple hair."
+- Birthday: "Thanks, sweetie. That's very kind of you to remember."
+
+### Observed English dialogue fragments (Clint)
+- Introduction: "Er... hi. I'm Clint. I'm the town blacksmith. If you ever need to upgrade your tools, I'm your guy."
+- Birthday: "I don't usually get birthday gifts. This act means a lot to me, @."
+
+### Observed English dialogue fragments (Demetrius)
+- Introduction: "Greetings! I'm Demetrius, local scientist and father. Thanks for introducing yourself! I study the plants and animals from my home laboratory."
+
+### Observed marriage-dialogue fragments (rainy-day / morning)
+- Abigail: "The dark... the rain, it gets me excited."
+- Alex: "With all this space, I can really achieve a full body workout."
+- Elliott: "I feel inspired today... I think I'll do some writing. The sound of rain reminds me of my cabin by the beach."
+- Haley: "I've changed a lot over the years, but I still prefer sunny weather."
+- Harvey: "It's a myth that rainy weather causes the flu. However, take care you don't slip on the mud!"
+- Leah: "I sometimes find inspiration in the most unlikely of places."
+
+### General string fragments (1_6_Strings.xnb)
+- Community Center / Wizard events, festival text, mail, and NPC-referenced dialogue tokens (e.g. "Don't touch that!", "I was thinking of joining you at the skull caves", "travel beyond Pelican Town", "cute sun...").
+
+### Characters with dialogue files in the APK
+Abigail, Alex, Caroline, Clint, Demetrius, Dwarf, Elliott, Emily, Evelyn, George, Gil, Gus, Haley, Harvey, Jas, Jodi, Kent, Krobus, Leah, Leo, Lewis, Linus, Marnie, Maru, Pam, Penny, Pierre, Robin, Sam, Sandy, Sebastian, Shane, Vincent, Willy, Wizard, plus `MarriageDialogue` files for the romanceable candidates (Abigail, Alex, Elliott, Emily, Haley, Harvey, Krobus, Leah, Maru, Penny, Sam, Sebastian, Shane) and a general `MarriageDialogue.xnb`.
+
+### Use for Valley Life
+This APK content is a **reference/comparison only**. Per AGENTS.md rules #3 and #4, all Valley Life dialogue, characters, and place names are written from scratch and renamed — nothing from the APK is copied into `js/game.js` or `content.md`.
+
 ---
 
-## 15. Marriage & Family
+## 17. Marriage & Family (Valley Life)
 
-- Marry any eligible (marriageable) villager regardless of gender, once relationship points reach 10.
+- Marry any eligible (marriageable) villager **of a different gender than the player**, once relationship points reach 10.
 - After marriage, the spouse is set and can help with daily farm chores (waters at least one crop during the night).
 - A married couple may choose to have children; choosing to have a child adds a child to the player's household.
 
 ---
 
-## 16. Source Notes
+## 18. Source Notes
 
 - `js/game.js` — all constants, data definitions, and game logic (original code, written from scratch).
 - `SPEC.md` — feature specification, tests, 3-part build plan, and Stardew Valley APK study (static inspection only; animals/buildings/dialogue categories confirmed from the shipped APK content layout).

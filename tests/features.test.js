@@ -69,6 +69,7 @@ function resetState() {
   V.state.relationships = V.initRelationships();
   V.state.spouse = null;
   V.state.children = [];
+  V.state.playerGender = 'male'; // default player gender for tests
   V.state.selectedTool = 'hoe';
   V.state.selectedBuilding = null;
   V.state.isNight = false;
@@ -498,6 +499,25 @@ test('Feature 30: Marrying an eligible villager sets the player\'s spouse', () =
   const result = V.marryVillager(villager);
   assert(result === true, 'marriage should succeed');
   assert(V.state.spouse === villager, 'spouse should be set to the villager');
+});
+
+// ---------- Feature 30 (restriction): same-gender marriage is not allowed ----------
+test('Feature 30: Same-gender marriage is rejected', () => {
+  resetState();
+  // Default player gender is male; smith is male -> same gender, must be rejected
+  const villager = 'smith';
+  V.state.player.y = V.VILLAGER_POSITIONS[villager].r;
+  V.state.player.x = V.VILLAGER_POSITIONS[villager].c;
+  V.state.inventory.ironBar = 5; // smith's liked gift
+  for (let i = 0; i < 10; i++) {
+    V.talkToVillager();
+    V.giveGift(villager, 'ironBar');
+  }
+  const rel = V.state.relationships[villager];
+  assert(rel.points >= V.MARRIAGE_RELATIONSHIP, 'relationship should be high enough to marry');
+  const result = V.marryVillager(villager);
+  assert(result === false, 'same-gender marriage should be rejected');
+  assert(V.state.spouse === null, 'spouse should remain null');
 });
 
 // ---------- Feature 31: Spouse help ----------
