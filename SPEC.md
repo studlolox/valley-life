@@ -104,6 +104,16 @@ Each feature below has exactly one test that verifies that feature. Tests are wr
 | 37 | **Top-down 3D rendering** — The game world is rendered in top-down perspective using three.js. | The game initializes a three.js Scene, PerspectiveCamera (or OrthographicCamera), and WebGLRenderer without throwing. |
 | 38 | **Browser execution** — The game runs in a web browser with no native dependencies. | Opening `index.html` in a browser loads and starts the game without requiring a build step or native install. |
 
+### 1.12 Economy, quests, events, cooking, and achievements
+
+| # | Feature | Test |
+|---|---------|------|
+| 39 | **Shop and economy** — Buy seeds with Gold and ship produce for Gold. | Buying a seed deducts Gold and adds the seed to inventory; shipping produce adds its sell price to Gold. |
+| 40 | **Quests** — Accept and complete story or bulletin quests for rewards. | Completing an active quest with required items marks it complete and awards Gold. |
+| 41 | **Storyline events** — Trigger narrative events and record seen events. | Triggering an unseen storyline event returns its script lines and marks it as seen. |
+| 42 | **Achievements** — Unlock player milestones based on progress. | Reaching an achievement condition unlocks that achievement once. |
+| 43 | **Cooking and crafting** — Cook food or craft items from inventory ingredients. | Cooking a recipe consumes its required ingredients and adds the cooked dish to inventory. |
+
 ---
 
 ## 2. Build plan (3 parts)

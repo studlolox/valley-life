@@ -4,7 +4,7 @@ Based on `features.md`. Each feature is marked with a tick (✓) when implemente
 
 ## Core features
 
-- [x] 1. **Farm management** — Inherit a dilapidated farm outside Pelican Town and restore it by clearing land, tilling soil, planting seasonal crops, and watering them daily.
+- [x] 1. **Farm management** — Inherit Oakridge Farm outside Willowbrook and restore it by clearing land, tilling soil, planting seasonal crops, and watering them daily.
 - [x] 2. **Crop system** — Plant seasonal seeds that grow over several days and must be harvested before the season changes.
 - [x] 3. **Animal husbandry** — Build barns and coops to raise animals that produce goods such as eggs and milk. Supports multiple animal types: chickens (various colors), cows, goats, sheep, pigs, rabbits, ducks, dinosaurs, ostriches, turtles, cats, dogs, and horses.
 - [x] 4. **Mining** — Explore a nearby cave system, break rocks with a pickaxe to collect ores, and fight monsters with a sword.
@@ -25,7 +25,7 @@ Based on `features.md`. Each feature is marked with a tick (✓) when implemente
 - [x] Top-down perspective rendered with three.js.
 - [x] Open-ended, nonlinear gameplay with no fixed win condition.
 - [x] Four seasons, each 28 days long.
-- [x] Pelican Town as the central hub with townspeople, shops, and the Community Center.
+- [x] Willowbrook as the central hub with townspeople, shops, and Willowbrook Hall.
 
 ## Technology
 

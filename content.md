@@ -10,86 +10,82 @@ Per AGENTS.md rule #4 (Rename): all character, place, and creature names are ori
 
 **Game identity:** Valley Life — an open-ended farm life simulation (top-down, three.js, browser-based).
 
-**Premise:** The player inherits a dilapidated farm outside the valley town and restores it by clearing land, tilling soil, planting seasonal crops, watering them, raising animals, mining, foraging, fishing, building relationships, and completing Community Center bundles. There is no fixed win condition; play is open-ended and nonlinear.
+**Premise:** The player inherits **Oakridge Farm** in **Sunhollow Valley**, just outside the town of **Willowbrook**, from **Grandpa Eldon**. They restore the dilapidated farm by clearing land, tilling soil, planting seasonal crops, watering them, raising animals, mining **Ironpeak Caverns**, foraging, fishing **Clearwater River** and **Silverfin Coast**, building relationships with 12 townspeople, and completing **Willowbrook Hall** bundles with the help of the **Mosskin** grove sprites (rivaled by **Apex Mart**). There is no fixed win condition; play is open-ended and nonlinear.
 
 **World:**
 - Top-down perspective rendered with three.js.
 - Four seasons, each 28 days long (Spring, Summer, Autumn, Winter).
-- The valley town is the central hub with townspeople, shops, and the Community Center.
+- **Willowbrook** is the central hub with townspeople, shops, and **Willowbrook Hall**.
 - Each morning begins with a full energy bar; time advances through day-length segments.
 
 ---
 
-## 2. NPCs / Townspeople
+## 2. NPCs / Townspeople (12 Original Characters)
 
-All names are original. Each villager has a position on the farm grid, dialogue lines, a liked gift, and a marriageable flag.
+All names are original. Each villager has a position, role, gender, birthday, loved/liked gifts, and a marriageable flag (8 marriageable).
 
-| Key | Name | Position (r, c) | Liked Gift | Marriageable |
-|-----|------|-----------------|------------|--------------|
-| elder | Village Elder | (10, 10) | copperBar | No |
-| baker | Baker | (4, 12) | wheat | Yes |
-| smith | Smith | (6, 14) | ironBar | Yes |
-| farmer | Farmhand | (8, 16) | turnip | Yes |
-| tailor | Tailor | (12, 14) | cloth | Yes |
-| librarian | Librarian | (2, 12) | goldBar | Yes |
+| Key | Name | Role | Gender | Position (r, c) | Liked Gift | Marriageable |
+|-----|------|------|--------|-----------------|------------|--------------|
+| elder | **Mayor Cedric** | Town Mayor | Male | (10, 10) | copperBar | No |
+| baker | **Clara** | Willowbrook Baker | Female | (4, 12) | wheat | Yes |
+| smith | **Garrick** | Ironpeak Blacksmith | Male | (6, 14) | ironBar | Yes |
+| farmer | **Maeve** | Oakridge Agronomist | Female | (8, 16) | turnip | Yes |
+| tailor | **Nora** | Silk & Spindle Tailor | Female | (12, 14) | cloth | Yes |
+| librarian | **Julian** | Willowbrook Archivist | Male | (2, 12) | goldBar | Yes |
+| carpenter | **Rowan** | Timbercraft Carpenter | Female | (3, 6) | squash | No |
+| angler | **Bram** | Silverfin Angler | Male | (16, 16) | fish | Yes |
+| merchant | **Tessa** | General Store Owner | Female | (5, 10) | melon | Yes |
+| mystic | **Orin** | Deepwoods Herbalist | Male | (14, 3) | mushroom | No |
+| rancher | **Dahlia** | Meadowgate Rancher | Female | (11, 8) | milk | Yes |
+| innkeeper | **Felix** | Hearthside Innkeeper | Male | (7, 11) | potato | Yes |
 
-**Relationship points needed to marry:** 10
-
----
-
-## 3. Villager Dialogue
-
-Original dialogue (not copied from any source). Talking to a villager returns a random line from their list and slightly builds rapport (+1 point, capped at the marriage threshold).
-
-| Villager | Dialogue Lines |
-|----------|----------------|
-| Village Elder | "Welcome to the valley, farmer." / "The seasons change, but the valley endures." / "Take care of your land and it will care for you." |
-| Baker | "Fresh bread comes out of the oven every morning." / "Nothing beats the smell of warm bread." / "I could use some wheat for today's loaves." |
-| Smith | "A good tool makes all the difference in the mine." / "I can smelt your ores into strong bars." / "The deeper you go, the tougher the monsters." |
-| Farmhand | "The soil here is rich if you tend it daily." / "Water your crops every morning for the best yield." / "A well-fed animal is a productive animal." |
-| Tailor | "I stitch clothes from cloth gathered around the valley." / "Wear something sturdy for farm work." |
-| Librarian | "The valley's history is kept in these old books." / "Quiet please, I am reading." |
+**Relationship points needed to marry:** 10 (between different genders)
 
 ---
 
-## 4. Crops & Seeds
+## 3. Villager Dialogue & Tiers
 
-Crop definitions (original data). Each crop is valid in one season and grows over a set number of days.
+Original dialogue written for Valley Life (`js/data.js`). Talking to a villager draws from character-specific lines, heart-tier pools (`low`, `mid`, `high`), weather lines (`rainy`), or `marriage` lines if married (+1 point, capped at 10).
 
-| Crop Key | Name | Season | Grow Days | Sell Price |
-|----------|------|--------|-----------|------------|
-| turnip | Turnip | Spring | 4 | 10 |
-| bean | Bean | Summer | 6 | 15 |
-| squash | Squash | Autumn | 5 | 12 |
-| root | Root | Winter | 7 | 18 |
+| Villager | Sample Dialogue Lines |
+|----------|-----------------------|
+| Mayor Cedric | "Welcome to Willowbrook, farmer. Your grandfather Eldon spoke of you often." / "Willowbrook Hall has stood quiet too long—perhaps you can help restore it." |
+| Clara | "Fresh loaves come out of the brick oven every morning at dawn." / "If you grow wheat or strawberries, bring some by the bakery!" |
+| Garrick | "A balanced pickaxe makes all the difference in Ironpeak Caverns." / "Careful past floor five—the cavern bats and golems hit harder down there." |
+| Maeve | "Oakridge soil is rich once you clear away the weeds and stones." / "Water your crops daily unless rain clouds roll over Sunhollow Valley." |
+| Nora | "I weave sturdy jackets and bright scarves from valley wool and cloth." |
+| Julian | "The chronicle of Sunhollow Valley fills three shelves in the Archive." |
+| Rowan | "Need a coop, barn, or shed? Timbercraft Workshop builds to last." |
+| Bram | "Clearwater River runs gentle, while Silverfin Coast hides the big catches." |
+| Tessa | "Seeds for every season are stocked fresh at Willowbrook General Store!" |
+| Orin | "The Mosskin still linger around Willowbrook Hall, waiting for kindness." |
+| Dahlia | "Chickens, cows, ostriches, even rare creatures thrive with daily hay." |
+| Felix | "Warm stew and a crackling hearth await at the Hearthside every evening." |
 
-Seed definitions:
+---
 
-| Seed Key | Name | Crop | Season | Price |
-|----------|------|------|--------|-------|
-| turnip | Turnip Seed | turnip | Spring | 5 |
-| bean | Bean Seed | bean | Summer | 7 |
-| squash | Squash Seed | squash | Autumn | 6 |
-| root | Root Seed | root | Winter | 8 |
+## 4. Crops & Seeds (16 Seasonal Crops)
+
+4 crops per season (`js/data.js`). Each crop grows only in its matching season.
+
+| Season | Crops (Key — Grow Days / Sell Price / Seed Price) |
+|--------|----------------------------------------------------|
+| Spring | `turnip` (4d / 10G / 5G), `strawberry` (6d / 24G / 12G), `potato` (5d / 16G / 8G), `cauliflower` (8d / 35G / 16G) |
+| Summer | `bean` (6d / 15G / 7G), `melon` (8d / 40G / 18G), `tomato` (5d / 18G / 9G), `blueberry` (7d / 28G / 14G) |
+| Autumn | `squash` (5d / 12G / 6G), `pumpkin` (8d / 42G / 20G), `corn` (6d / 22G / 10G), `cranberry` (5d / 20G / 10G) |
+| Winter | `root` (7d / 18G / 8G), `frostherb` (4d / 20G / 10G), `snowdrop` (5d / 26G / 12G), `iceberry` (6d / 32G / 15G) |
 
 **Seasonal rule:** A seed can only be planted in its matching season. Crops stop growing / do not auto-harvest when the season changes.
 
 ---
 
-## 5. Animals & Animal Products
+## 5. Animals & Animal Products (13 Varieties)
 
-| Animal Key | Name | Product | Product Amount | Hay Consumption |
-|------------|------|---------|----------------|-----------------|
-| chicken | Chicken | egg | 1 | 1 |
-| cow | Cow | milk | 1 | 2 |
-| ostrich | Ostrich | egg | 1 | 1 |
-
-**Buildings that house animals:**
-
-| Building | Cost | Capacity | Houses |
-|----------|------|----------|--------|
-| Coop | 40 wood, 15 stone | 4 | chicken |
-| Barn | 80 wood, 40 stone | 6 | cow, ostrich |
+Supports all 13 animal types in `js/data.js`:
+- **Coop (`capacity: 4`):** `chicken` (variants: white, brown, blue, void, golden → `egg`), `duck` (`duckEgg`), `rabbit` (`rabbitWool`), `dinosaur` (`dinoEgg`)
+- **Barn (`capacity: 6`):** `cow` (`milk`), `ostrich` (`egg`), `goat` (`goatMilk`), `sheep` (`wool`), `pig` (`truffle`)
+- **Stable (`capacity: 2`):** `horse` (mount)
+- **Pets:** `cat` (`purrGift`), `dog` (`boneFind`), `turtle` (`mossShell`)
 
 **Rules:**
 - Animals must be fed daily (hay) to produce goods.
@@ -103,9 +99,10 @@ Seed definitions:
 
 | Building | Cost | Capacity | Houses | Notes |
 |----------|------|----------|--------|-------|
-| Coop | 40 wood, 15 stone | 4 | chicken | Houses chickens |
-| Barn | 80 wood, 40 stone | 6 | cow, ostrich | Houses cows and ostriches |
+| Coop | 40 wood, 15 stone | 4 | chicken, duck, rabbit, dinosaur | Houses poultry & small creatures |
+| Barn | 80 wood, 40 stone | 6 | cow, ostrich, goat, sheep, pig | Houses livestock |
 | Shed | 30 wood, 10 stone | 0 | — | General storage |
+| Stable | 60 wood, 25 stone | 2 | horse | Houses riding horses |
 
 **Build rules:** Place on a clear grass tile (no tree/rock/weed/planting). Player must afford the resource cost.
 

@@ -4,7 +4,7 @@ Valley Life is an open-ended farm life simulation game inspired by Stardew Valle
 
 ## Core features
 
-1. **Farm management** — Inherit a dilapidated farm outside Pelican Town and restore it by clearing land, tilling soil, planting seasonal crops, and watering them daily.
+1. **Farm management** — Inherit Oakridge Farm outside Willowbrook and restore it by clearing land, tilling soil, planting seasonal crops, and watering them daily.
 2. **Crop system** — Plant seasonal seeds that grow over several days and must be harvested before the season changes.
 3. **Animal husbandry** — Build barns and coops to raise animals that produce goods such as eggs and milk. Supports multiple animal types: chickens (various colors), cows, goats, sheep, pigs, rabbits, ducks, dinosaurs, ostriches, turtles, cats, dogs, and horses.
 4. **Mining** — Explore a nearby cave system, break rocks with a pickaxe to collect ores, and fight monsters with a sword.
@@ -19,13 +19,16 @@ Valley Life is an open-ended farm life simulation game inspired by Stardew Valle
 13. **Community Center bundles** — Complete bundles by collecting a set amount of goods and delivering them to the Community Center to unlock new areas and activities.
 14. **Farm types** — Choose from several farm types, each with a unique theme and different benefits/drawbacks that help focus on upgrading different skills faster.
 15. **Multiplayer** — Play online with other players (added as a post-release feature).
+16. **Economy & shops** — Buy seasonal seeds and supplies with Gold, and ship produce for nightly Gold earnings.
+17. **Quests, events & achievements** — Complete story and bulletin quests, experience seasonal festivals and heart events, and unlock achievements.
+18. **Cooking & crafting** — Cook stamina-restoring meals and craft farm machines from gathered materials.
 
 ## Game world
 
 - Top-down perspective rendered with three.js.
 - Open-ended, nonlinear gameplay with no fixed win condition.
 - Four seasons, each 28 days long.
-- Pelican Town as the central hub with townspeople, shops, and the Community Center.
+- Willowbrook as the central hub with townspeople, shops, and Willowbrook Hall.
 
 ## Technology
 

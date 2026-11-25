@@ -2,6 +2,28 @@
 // All code written from scratch, not copied from any source.
 
 import * as THREE from 'three';
+import {
+  LOCATIONS,
+  CROPS,
+  SEEDS,
+  BUILDINGS,
+  CHICKEN_VARIANTS,
+  ANIMALS,
+  FORAGE_ITEMS,
+  FISH_TYPES,
+  ITEM_PRICES,
+  RECIPES,
+  VILLAGERS,
+  VILLAGER_POSITIONS,
+  VILLAGER_DIALOGUE,
+  VILLAGER_DIALOGUE_TIERS,
+  BUNDLES,
+  FARM_TYPES,
+  QUESTS,
+  STORY_EVENTS,
+  FESTIVALS,
+  ACHIEVEMENTS,
+} from './data.js';
 
 // ============ Game Constants ============
 const TILE_SIZE = 2;
@@ -14,36 +36,6 @@ const ENERGY_PER_CHOP = 15;
 const ENERGY_PER_PLANT = 5;
 const SEASONS = ['Spring', 'Summer', 'Autumn', 'Winter'];
 const DAYS_PER_SEASON = 28;
-
-// Crop definitions (original data, not copied)
-const CROPS = {
-  turnip: { name: 'Turnip', seasons: ['Spring'], growDays: 4, sellPrice: 10 },
-  bean:   { name: 'Bean',   seasons: ['Summer'], growDays: 6, sellPrice: 15 },
-  squash: { name: 'Squash', seasons: ['Autumn'], growDays: 5, sellPrice: 12 },
-  root:   { name: 'Root',   seasons: ['Winter'], growDays: 7, sellPrice: 18 },
-};
-
-// Seed definitions
-const SEEDS = {
-  turnip: { name: 'Turnip Seed', crop: 'turnip', season: 'Spring', price: 5 },
-  bean:   { name: 'Bean Seed',   crop: 'bean',   season: 'Summer', price: 7 },
-  squash: { name: 'Squash Seed', crop: 'squash', season: 'Autumn', price: 6 },
-  root:   { name: 'Root Seed',   crop: 'root',   season: 'Winter', price: 8 },
-};
-
-// Building definitions (original data)
-const BUILDINGS = {
-  coop:  { name: 'Coop',  cost: { wood: 40, stone: 15 }, capacity: 4, houses: ['chicken'] },
-  barn:  { name: 'Barn',  cost: { wood: 80, stone: 40 }, capacity: 6, houses: ['cow', 'ostrich'] },
-  shed:  { name: 'Shed',  cost: { wood: 30, stone: 10 }, capacity: 0, houses: null },
-};
-
-// Animal definitions (original data)
-const ANIMALS = {
-  chicken: { name: 'Chicken',  product: 'egg',   productAmount: 1, hayConsumption: 1 },
-  cow:     { name: 'Cow',      product: 'milk',  productAmount: 1, hayConsumption: 2 },
-  ostrich: { name: 'Ostrich',  product: 'egg',   productAmount: 1, hayConsumption: 1 },
-};
 
 // Multiplayer session (original data)
 // An in-memory host session that can be backed by WebSocket in production.
@@ -99,14 +91,6 @@ function resetMultiplayer() {
   multiplayerSession.players.clear();
 }
 
-// Farm type definitions (original data)
-// Each farm type has a unique theme and starting benefits/drawbacks.
-const FARM_TYPES = {
-  standard: { name: 'Standard Farm', startingForage: 2, startingWood: 60, startingStone: 40 },
-  forest:   { name: 'Forest Farm',   startingForage: 5, startingWood: 40, startingStone: 20 },
-  river:    { name: 'River Farm',    startingForage: 3, startingWood: 30, startingStone: 30 },
-};
-
 // Selected farm type (set at game start)
 let selectedFarmType = 'standard';
 
@@ -155,76 +139,11 @@ function gainExperience(skill, amount) {
   }
 }
 
-// Villager data for social relationships (original data, renamed characters)
-// gender: 'male' or 'female'. Marriage is only allowed between villagers of
-// different genders (see marryVillager).
-const VILLAGERS = {
-  elder:   { name: 'Village Elder',   gender: 'male',   likedGift: 'copperBar', marriageable: false },
-  baker:   { name: 'Baker',           gender: 'female', likedGift: 'wheat',     marriageable: true },
-  smith:   { name: 'Smith',           gender: 'male',   likedGift: 'ironBar',   marriageable: true },
-  farmer:  { name: 'Farmhand',        gender: 'female', likedGift: 'turnip',    marriageable: true },
-  tailor:  { name: 'Tailor',          gender: 'female', likedGift: 'cloth',     marriageable: true },
-  librarian: { name: 'Librarian',     gender: 'male',   likedGift: 'goldBar',   marriageable: true },
-};
-
 // Relationship points needed to marry
 const MARRIAGE_RELATIONSHIP = 10;
 
-// Villager dialogue (original dialogue, not copied from any source)
-const VILLAGER_DIALOGUE = {
-  elder:   ["Welcome to the valley, farmer.", "The seasons change, but the valley endures.", "Take care of your land and it will care for you."],
-  baker:   ["Fresh bread comes out of the oven every morning.", "Nothing beats the smell of warm bread.", "I could use some wheat for today's loaves."],
-  smith:   ["A good tool makes all the difference in the mine.", "I can smelt your ores into strong bars.", "The deeper you go, the tougher the monsters."],
-  farmer:  ["The soil here is rich if you tend it daily.", "Water your crops every morning for the best yield.", "A well-fed animal is a productive animal."],
-  tailor:  ["I stitch clothes from cloth gathered around the valley.", "Wear something sturdy for farm work."],
-  librarian: ["The valley's history is kept in these old books.", "Quiet please, I am reading."],
-};
-
-// Community Center bundles (original data, not copied)
-// Each bundle requires a set of goods; donating all required items completes it.
-const BUNDLES = {
-  springCrops: {
-    name: 'Spring Crops Bundle',
-    area: 'Crafts Room',
-    required: { turnip: 10 },
-    completed: false,
-    reward: 'springFieldsUnlocked',
-  },
-  summerCrops: {
-    name: 'Summer Crops Bundle',
-    area: 'Crafts Room',
-    required: { bean: 10 },
-    completed: false,
-    reward: 'summerFieldsUnlocked',
-  },
-  animalGoods: {
-    name: 'Animal Goods Bundle',
-    area: 'Crafts Room',
-    required: { egg: 5, milk: 5 },
-    completed: false,
-    reward: 'coopUnlocked',
-  },
-  mineOres: {
-    name: 'Mine Ores Bundle',
-    area: 'Crafts Room',
-    required: { copperBar: 5, ironBar: 5 },
-    completed: false,
-    reward: 'deepMineUnlocked',
-  },
-};
-
 // Track which valley areas have been unlocked by bundle completion
 const unlockedAreas = {};
-
-// Villager positions on the farm grid (row, column)
-const VILLAGER_POSITIONS = {
-  elder:   { r: 10, c: 10 },
-  baker:   { r: 4,  c: 12 },
-  smith:   { r: 6,  c: 14 },
-  farmer:  { r: 8,  c: 16 },
-  tailor:  { r: 12, c: 14 },
-  librarian: { r: 2, c: 12 },
-};
 
 // Track relationship points and whether the player talked today per villager
 function initRelationships() {
@@ -256,6 +175,9 @@ const state = {
   relationships: initRelationships(),
   spouse: null,
   children: [],
+  quests: {},
+  seenEvents: {},
+  achievements: {},
   selectedTool: 'hoe',
   selectedBuilding: null,
   grid: [], // 2D array of tile objects
@@ -690,8 +612,14 @@ function talkToVillager() {
       if (rel.points < MARRIAGE_RELATIONSHIP) {
         rel.points += 1;
       }
-      const dialogue = VILLAGER_DIALOGUE[key] || ['...'];
-      return dialogue[Math.floor(Math.random() * dialogue.length)];
+      if (state.spouse === key && VILLAGER_DIALOGUE_TIERS.marriage.length > 0 && Math.random() < 0.5) {
+        const lines = VILLAGER_DIALOGUE_TIERS.marriage;
+        return lines[Math.floor(Math.random() * lines.length)];
+      }
+      const charLines = VILLAGER_DIALOGUE[key] || ['...'];
+      const tierKey = rel.points >= 6 ? 'high' : rel.points >= 3 ? 'mid' : 'low';
+      const pool = Math.random() < 0.7 ? charLines : VILLAGER_DIALOGUE_TIERS[tierKey];
+      return pool[Math.floor(Math.random() * pool.length)];
     }
   }
   return null;
@@ -884,14 +812,6 @@ function getUnlockedAreas() {
   return unlockedAreas;
 }
 
-// Forageable wild items (original data)
-const FORAGE_ITEMS = {
-  wildRoot: { name: 'Wild Root', type: 'forage' },
-  springOnion: { name: 'Spring Onion', type: 'forage' },
-  berry: { name: 'Wild Berry', type: 'forage' },
-  mushroom: { name: 'Mushroom', type: 'forage' },
-};
-
 // Place forageable items on the farm
 function placeForageItems() {
   const positions = [
@@ -999,6 +919,119 @@ function eatFood(itemKey, restoreValue) {
   return true;
 }
 
+// Feature 39: Shop & economy - buy seeds and ship items for Gold
+function buySeed(seedKey, qty = 1) {
+  const seed = SEEDS[seedKey];
+  if (!seed || qty <= 0) return false;
+  const totalCost = seed.price * qty;
+  if (state.money < totalCost) {
+    showMessage('Not enough Gold!');
+    return false;
+  }
+  state.money -= totalCost;
+  const invKey = `${seedKey}Seed`;
+  state.inventory[invKey] = (state.inventory[invKey] || 0) + qty;
+  updateHUD();
+  showMessage(`Bought ${qty} ${seed.name}.`);
+  return true;
+}
+
+function shipItem(itemKey, qty = 1) {
+  if (!itemKey || qty <= 0) return false;
+  if ((state.inventory[itemKey] || 0) < qty) return false;
+  const unitPrice =
+    ITEM_PRICES[itemKey] ??
+    CROPS[itemKey]?.sellPrice ??
+    FORAGE_ITEMS[itemKey]?.sellPrice ??
+    FISH_TYPES[itemKey]?.sellPrice ??
+    0;
+  if (unitPrice <= 0) return false;
+  state.inventory[itemKey] -= qty;
+  if (state.inventory[itemKey] <= 0) delete state.inventory[itemKey];
+  const earned = unitPrice * qty;
+  state.money += earned;
+  unlockAchievement('firstShip');
+  updateHUD();
+  showMessage(`Shipped ${itemKey} for ${earned}G!`);
+  return true;
+}
+
+// Feature 40: Quests - accept and complete quests
+function acceptQuest(questId) {
+  const quest = QUESTS[questId];
+  if (!quest) return false;
+  if (state.quests[questId]) return false;
+  state.quests[questId] = { ...quest, active: true, completed: false };
+  return true;
+}
+
+function completeQuest(questId) {
+  const q = state.quests[questId];
+  if (!q || !q.active || q.completed) return false;
+  for (const [itemKey, reqAmt] of Object.entries(q.required || {})) {
+    if ((state.inventory[itemKey] || 0) < reqAmt) return false;
+  }
+  for (const [itemKey, reqAmt] of Object.entries(q.required || {})) {
+    state.inventory[itemKey] -= reqAmt;
+    if (state.inventory[itemKey] <= 0) delete state.inventory[itemKey];
+  }
+  q.completed = true;
+  q.active = false;
+  state.money += q.rewardGold || 0;
+  updateHUD();
+  showMessage(`Quest complete: ${q.title}! (+${q.rewardGold}G)`);
+  return true;
+}
+
+function getActiveQuests() {
+  return Object.values(state.quests).filter((q) => q.active && !q.completed);
+}
+
+// Feature 41: Storyline events - trigger and track seen events
+function triggerEvent(eventId) {
+  const evt = STORY_EVENTS[eventId];
+  if (!evt) return null;
+  state.seenEvents[eventId] = true;
+  return evt.lines;
+}
+
+function hasSeenEvent(eventId) {
+  return !!state.seenEvents[eventId];
+}
+
+// Feature 42: Achievements - unlock milestone once
+function unlockAchievement(achievementId) {
+  const ach = ACHIEVEMENTS[achievementId];
+  if (!ach) return false;
+  if (state.achievements[achievementId]) return false;
+  state.achievements[achievementId] = { unlockedAtDay: state.day };
+  showMessage(`Achievement Unlocked: ${ach.name}!`);
+  return true;
+}
+
+function hasAchievement(achievementId) {
+  return !!state.achievements[achievementId];
+}
+
+// Feature 43: Cooking and crafting - consume ingredients and produce item
+function cookRecipe(recipeKey) {
+  const recipe = RECIPES[recipeKey];
+  if (!recipe) return false;
+  for (const [ing, amt] of Object.entries(recipe.ingredients)) {
+    if ((state.inventory[ing] || 0) < amt) return false;
+  }
+  for (const [ing, amt] of Object.entries(recipe.ingredients)) {
+    state.inventory[ing] -= amt;
+    if (state.inventory[ing] <= 0) delete state.inventory[ing];
+  }
+  state.inventory[recipeKey] = (state.inventory[recipeKey] || 0) + 1;
+  if (recipe.type === 'cooking') {
+    unlockAchievement('masterChef');
+  }
+  showMessage(`Made ${recipe.name}!`);
+  return true;
+}
+
 // Feature 5: Save/load - game state persists
 function saveGame() {
   const saveData = {
@@ -1007,12 +1040,27 @@ function saveGame() {
     energy: state.energy,
     maxEnergy: state.maxEnergy,
     money: state.money,
+    resources: state.resources,
     inventory: state.inventory,
     selectedTool: state.selectedTool,
     grid: state.grid,
     player: state.player,
+    playerGender: state.playerGender,
     isNight: state.isNight,
     timeOfDay: state.timeOfDay,
+    buildings: state.buildings,
+    animals: state.animals,
+    skills: state.skills,
+    relationships: state.relationships,
+    spouse: state.spouse,
+    children: state.children,
+    forageItems: state.forageItems,
+    fishingSpots: state.fishingSpots,
+    quests: state.quests,
+    seenEvents: state.seenEvents,
+    achievements: state.achievements,
+    unlockedAreas: { ...unlockedAreas },
+    selectedFarmType,
   };
   localStorage.setItem('valleylife_save', JSON.stringify(saveData));
   showMessage('Game saved.');
@@ -1031,12 +1079,30 @@ function loadGame() {
     state.energy = data.energy;
     state.maxEnergy = data.maxEnergy;
     state.money = data.money;
+    if (data.resources) state.resources = data.resources;
     state.inventory = data.inventory || {};
     state.selectedTool = data.selectedTool || 'hoe';
     state.grid = data.grid;
     state.player = data.player || { x: 0, y: 0, z: 0 };
+    if (data.playerGender) state.playerGender = data.playerGender;
     state.isNight = data.isNight || false;
     state.timeOfDay = data.timeOfDay || 6;
+    if (data.buildings) state.buildings = data.buildings;
+    if (data.animals) state.animals = data.animals;
+    if (data.skills) state.skills = data.skills;
+    if (data.relationships) state.relationships = data.relationships;
+    state.spouse = data.spouse !== undefined ? data.spouse : null;
+    if (data.children) state.children = data.children;
+    if (data.forageItems) state.forageItems = data.forageItems;
+    if (data.fishingSpots) state.fishingSpots = data.fishingSpots;
+    if (data.quests) state.quests = data.quests;
+    if (data.seenEvents) state.seenEvents = data.seenEvents;
+    if (data.achievements) state.achievements = data.achievements;
+    if (data.unlockedAreas) {
+      Object.keys(unlockedAreas).forEach((k) => delete unlockedAreas[k]);
+      Object.assign(unlockedAreas, data.unlockedAreas);
+    }
+    if (data.selectedFarmType) selectedFarmType = data.selectedFarmType;
     refreshTileColors();
     updatePlayerPosition();
     updateHUD();
@@ -1229,6 +1295,26 @@ const ValleyLifeAPI = {
   getConnectedPlayers,
   leaveSession,
   resetMultiplayer,
+  // Phase 1 Content & Systems (Features 39-43)
+  LOCATIONS,
+  CHICKEN_VARIANTS,
+  FISH_TYPES,
+  ITEM_PRICES,
+  RECIPES,
+  QUESTS,
+  STORY_EVENTS,
+  FESTIVALS,
+  ACHIEVEMENTS,
+  buySeed,
+  shipItem,
+  acceptQuest,
+  completeQuest,
+  getActiveQuests,
+  triggerEvent,
+  hasSeenEvent,
+  unlockAchievement,
+  hasAchievement,
+  cookRecipe,
 };
 
 if (typeof globalThis !== 'undefined') {

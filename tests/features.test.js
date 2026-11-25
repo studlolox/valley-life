@@ -69,6 +69,9 @@ function resetState() {
   V.state.relationships = V.initRelationships();
   V.state.spouse = null;
   V.state.children = [];
+  V.state.quests = {};
+  V.state.seenEvents = {};
+  V.state.achievements = {};
   V.state.playerGender = 'male'; // default player gender for tests
   V.state.selectedTool = 'hoe';
   V.state.selectedBuilding = null;
@@ -601,6 +604,64 @@ test('Feature 36: Connecting a second client synchronizes position to host', () 
   const pos = V.getPlayerPosition(clientId);
   assert(pos.x === 5 && pos.y === 7, 'client position should be synchronized');
   assert(V.getConnectedPlayers().length === 2, 'host and client should both be connected');
+});
+
+// ---------- Feature 39: Shop and economy ----------
+test('Feature 39: Buying a seed deducts Gold and shipping produce adds Gold', () => {
+  resetState();
+  V.state.money = 100;
+  const bought = V.buySeed('turnip', 2); // 2 * 5 = 10G
+  assert(bought === true, 'buying turnip seeds should succeed');
+  assert(V.state.money === 90, `money should be 90 after purchase, got ${V.state.money}`);
+  assert(V.state.inventory.turnipSeed === 2, 'seeds should be in inventory');
+  V.state.inventory.turnip = 3;
+  const shipped = V.shipItem('turnip', 2); // 2 * 10 = 20G
+  assert(shipped === true, 'shipping turnips should succeed');
+  assert(V.state.money === 110, `money should be 110 after shipping, got ${V.state.money}`);
+  assert(V.state.inventory.turnip === 1, 'remaining turnip count should be 1');
+});
+
+// ---------- Feature 40: Quests ----------
+test('Feature 40: Completing an active quest awards Gold', () => {
+  resetState();
+  const accepted = V.acceptQuest('clearLand');
+  assert(accepted === true, 'accepting quest should succeed');
+  assert(V.getActiveQuests().length === 1, 'one quest should be active');
+  V.state.inventory.turnip = 1;
+  const moneyBefore = V.state.money;
+  const completed = V.completeQuest('clearLand');
+  assert(completed === true, 'completing quest should succeed');
+  assert(V.state.quests.clearLand.completed === true, 'quest should be marked complete');
+  assert(V.state.money === moneyBefore + V.QUESTS.clearLand.rewardGold, 'quest reward Gold should be awarded');
+});
+
+// ---------- Feature 41: Storyline events ----------
+test('Feature 41: Triggering a storyline event returns lines and marks seen', () => {
+  resetState();
+  assert(V.hasSeenEvent('arrivalLetter') === false, 'event should start unseen');
+  const lines = V.triggerEvent('arrivalLetter');
+  assert(Array.isArray(lines) && lines.length > 0, 'event should return dialogue/story lines');
+  assert(V.hasSeenEvent('arrivalLetter') === true, 'event should be marked seen');
+});
+
+// ---------- Feature 42: Achievements ----------
+test('Feature 42: Unlocking an achievement records it once', () => {
+  resetState();
+  assert(V.hasAchievement('firstHarvest') === false, 'achievement should start locked');
+  assert(V.unlockAchievement('firstHarvest') === true, 'first unlock should return true');
+  assert(V.hasAchievement('firstHarvest') === true, 'achievement should be unlocked');
+  assert(V.unlockAchievement('firstHarvest') === false, 'duplicate unlock should return false');
+});
+
+// ---------- Feature 43: Cooking and crafting ----------
+test('Feature 43: Cooking a recipe consumes ingredients and adds cooked dish', () => {
+  resetState();
+  V.state.inventory.berry = 2;
+  V.state.inventory.egg = 1;
+  const cooked = V.cookRecipe('berryPie');
+  assert(cooked === true, 'cooking berryPie should succeed');
+  assert(!V.state.inventory.berry && !V.state.inventory.egg, 'ingredients should be consumed');
+  assert(V.state.inventory.berryPie === 1, 'cooked berryPie should be in inventory');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
