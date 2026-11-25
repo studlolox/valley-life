@@ -78,6 +78,18 @@ function resetState() {
   for (const key of Object.keys(V.VILLAGERS || {})) {
     V.VILLAGERS[key].married = false;
   }
+  // Reset bundle completion flags on the shared data object
+  for (const key of Object.keys(V.BUNDLES || {})) {
+    V.BUNDLES[key].completed = false;
+  }
+  // Reset unlocked areas
+  for (const key of Object.keys(V.getUnlockedAreas() || {})) {
+    delete V.getUnlockedAreas()[key];
+  }
+  // Reset farm type selection
+  V.selectFarmType('standard');
+  // Reset multiplayer session
+  V.resetMultiplayer();
   V.initGrid();
 }
 
@@ -527,6 +539,48 @@ test('Feature 32: Choosing to have a child adds a child to the household', () =>
   const result = V.haveChild();
   assert(result === true, 'having a child should succeed');
   assert(V.state.children.length === before + 1, 'a child should be added to the household');
+});
+
+// ---------- Feature 33: Community Center bundles ----------
+test('Feature 33: Donating all required items completes a bundle', () => {
+  resetState();
+  V.state.inventory.turnip = 10;
+  const result = V.donateToBundle('springCrops');
+  assert(result === true, 'donating all required items should complete the bundle');
+  assert(V.BUNDLES.springCrops.completed === true, 'springCrops bundle should be marked complete');
+  assert(V.state.inventory.turnip === 0 || !V.state.inventory.turnip, 'required items should be consumed');
+});
+
+// ---------- Feature 34: Bundle rewards ----------
+test('Feature 34: Completing a bundle unlocks a new area', () => {
+  resetState();
+  V.state.inventory.turnip = 10;
+  V.donateToBundle('springCrops');
+  assert(V.isAreaUnlocked('springFieldsUnlocked') === true, 'completing a bundle should unlock its reward area');
+});
+
+// ---------- Feature 35: Farm types ----------
+test('Feature 35: Forest farm type starts with more forage than Standard', () => {
+  resetState();
+  const forest = V.getFarmTypes().forest;
+  const standard = V.getFarmTypes().standard;
+  assert(forest.startingForage > standard.startingForage, 'Forest farm should start with more forage than Standard');
+  const result = V.selectFarmType('forest');
+  assert(result === true, 'selecting forest farm type should succeed');
+  assert(V.getSelectedFarmType() === 'forest', 'selected farm type should be forest');
+});
+
+// ---------- Feature 36: Multiplayer ----------
+test('Feature 36: Connecting a second client synchronizes position to host', () => {
+  resetState();
+  const hostId = 'player1';
+  const clientId = 'player2';
+  assert(V.hostSession(hostId) === true, 'host session should start');
+  assert(V.joinSession(clientId) === true, 'second client should join');
+  assert(V.syncPlayerPosition(clientId, 5, 7) === true, 'client position should sync');
+  const pos = V.getPlayerPosition(clientId);
+  assert(pos.x === 5 && pos.y === 7, 'client position should be synchronized');
+  assert(V.getConnectedPlayers().length === 2, 'host and client should both be connected');
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

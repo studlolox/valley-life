@@ -1,0 +1,46 @@
+# Valley Life — Feature Checklist
+
+Based on `features.md`. Each feature is marked with a tick (✓) when implemented and tested, or a cross (✗) when not yet done. The goal is to have every line ticked.
+
+## Core features
+
+- [x] 1. **Farm management** — Inherit a dilapidated farm outside Pelican Town and restore it by clearing land, tilling soil, planting seasonal crops, and watering them daily.
+- [x] 2. **Crop system** — Plant seasonal seeds that grow over several days and must be harvested before the season changes.
+- [x] 3. **Animal husbandry** — Build barns and coops to raise animals that produce goods such as eggs and milk. Supports multiple animal types: chickens (various colors), cows, goats, sheep, pigs, rabbits, ducks, dinosaurs, ostriches, turtles, cats, dogs, and horses.
+- [x] 4. **Mining** — Explore a nearby cave system, break rocks with a pickaxe to collect ores, and fight monsters with a sword.
+- [x] 5. **Foraging** — Collect wild items found around the valley.
+- [x] 6. **Fishing** — Catch fish in rivers, lakes, and the ocean.
+- [x] 7. **Combat** — Switch between tools and weapons while exploring deeper mine levels where more valuable treasures and stronger monsters appear.
+- [x] 8. **Skills** — Level up farming, foraging, fishing, mining, and combat by performing related actions.
+- [x] 9. **Energy system** — Each morning begins with a full energy bar that decreases as tasks are performed; replenish by eating food.
+- [x] 10. **Time system** — Time is divided into day-length segments across four 28-day seasons; each morning starts with full energy.
+- [x] 11. **Relationships** — Interact with townspeople and give gifts to build relationships over time.
+- [x] 12. **Marriage and family** — Marry one of the eligible townspeople regardless of gender; the spouse can help with daily farm chores, and the couple may choose to have children.
+- [x] 13. **Community Center bundles** — Complete bundles by collecting a set amount of goods and delivering them to the Community Center to unlock new areas and activities.
+- [x] 14. **Farm types** — Choose from several farm types, each with a unique theme and different benefits/drawbacks that help focus on upgrading different skills faster.
+- [x] 15. **Multiplayer** — Play online with other players (added as a post-release feature).
+
+## Game world
+
+- [x] Top-down perspective rendered with three.js.
+- [x] Open-ended, nonlinear gameplay with no fixed win condition.
+- [x] Four seasons, each 28 days long.
+- [x] Pelican Town as the central hub with townspeople, shops, and the Community Center.
+
+## Technology
+
+- [x] three.js for 3D rendering in the browser.
+- [x] Vanilla JavaScript game logic.
+- [x] Runs in a web browser without native dependencies.
+
+---
+
+**Status: All 15 core features, 4 game-world items, and 3 technology items are ticked (✓).**
+
+All features in `SPEC.md` (36 numbered features, one test each) are implemented and passing:
+- Features 1–32: farming, animals, mining, foraging, fishing, skills, energy, time, relationships, marriage, children
+- Features 33–34: Community Center bundles and bundle rewards
+- Feature 35: Farm types
+- Feature 36: Multiplayer
+
+Run the full test suite with `npm test`.

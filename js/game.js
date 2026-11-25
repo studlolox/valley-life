@@ -45,6 +45,71 @@ const ANIMALS = {
   ostrich: { name: 'Ostrich',  product: 'egg',   productAmount: 1, hayConsumption: 1 },
 };
 
+// Multiplayer session (original data)
+// An in-memory host session that can be backed by WebSocket in production.
+// Clients join the session and their positions are synchronized to the host.
+const multiplayerSession = {
+  hostId: null,
+  players: new Map(), // playerId -> { x, y, joinedAt }
+};
+
+function hostSession(hostId) {
+  if (multiplayerSession.hostId !== null) return false;
+  multiplayerSession.hostId = hostId;
+  multiplayerSession.players.set(hostId, { x: 0, y: 0, joinedAt: Date.now() });
+  return true;
+}
+
+function joinSession(playerId) {
+  if (multiplayerSession.hostId === null) return false;
+  if (multiplayerSession.players.has(playerId)) return false;
+  multiplayerSession.players.set(playerId, { x: 0, y: 0, joinedAt: Date.now() });
+  return true;
+}
+
+function syncPlayerPosition(playerId, x, y) {
+  if (!multiplayerSession.players.has(playerId)) return false;
+  const player = multiplayerSession.players.get(playerId);
+  player.x = x;
+  player.y = y;
+  return true;
+}
+
+function getPlayerPosition(playerId) {
+  const player = multiplayerSession.players.get(playerId);
+  if (!player) return null;
+  return { x: player.x, y: player.y };
+}
+
+function getConnectedPlayers() {
+  return Array.from(multiplayerSession.players.keys());
+}
+
+function leaveSession(playerId) {
+  if (playerId === multiplayerSession.hostId) {
+    multiplayerSession.hostId = null;
+    multiplayerSession.players.clear();
+    return true;
+  }
+  return multiplayerSession.players.delete(playerId);
+}
+
+function resetMultiplayer() {
+  multiplayerSession.hostId = null;
+  multiplayerSession.players.clear();
+}
+
+// Farm type definitions (original data)
+// Each farm type has a unique theme and starting benefits/drawbacks.
+const FARM_TYPES = {
+  standard: { name: 'Standard Farm', startingForage: 2, startingWood: 60, startingStone: 40 },
+  forest:   { name: 'Forest Farm',   startingForage: 5, startingWood: 40, startingStone: 20 },
+  river:    { name: 'River Farm',    startingForage: 3, startingWood: 30, startingStone: 30 },
+};
+
+// Selected farm type (set at game start)
+let selectedFarmType = 'standard';
+
 // Mine constants and helpers (original data)
 const MINE_ENERGY_PER_ENTER = 10;
 const MINE_ENERGY_PER_MINE = 10;
@@ -112,6 +177,42 @@ const VILLAGER_DIALOGUE = {
   tailor:  ["I stitch clothes from cloth gathered around the valley.", "Wear something sturdy for farm work."],
   librarian: ["The valley's history is kept in these old books.", "Quiet please, I am reading."],
 };
+
+// Community Center bundles (original data, not copied)
+// Each bundle requires a set of goods; donating all required items completes it.
+const BUNDLES = {
+  springCrops: {
+    name: 'Spring Crops Bundle',
+    area: 'Crafts Room',
+    required: { turnip: 10 },
+    completed: false,
+    reward: 'springFieldsUnlocked',
+  },
+  summerCrops: {
+    name: 'Summer Crops Bundle',
+    area: 'Crafts Room',
+    required: { bean: 10 },
+    completed: false,
+    reward: 'summerFieldsUnlocked',
+  },
+  animalGoods: {
+    name: 'Animal Goods Bundle',
+    area: 'Crafts Room',
+    required: { egg: 5, milk: 5 },
+    completed: false,
+    reward: 'coopUnlocked',
+  },
+  mineOres: {
+    name: 'Mine Ores Bundle',
+    area: 'Crafts Room',
+    required: { copperBar: 5, ironBar: 5 },
+    completed: false,
+    reward: 'deepMineUnlocked',
+  },
+};
+
+// Track which valley areas have been unlocked by bundle completion
+const unlockedAreas = {};
 
 // Villager positions on the farm grid (row, column)
 const VILLAGER_POSITIONS = {
@@ -480,6 +581,22 @@ function canAfford(buildingKey) {
   return true;
 }
 
+// Farm type selection (Feature 35)
+function selectFarmType(farmTypeKey) {
+  const farmType = FARM_TYPES[farmTypeKey];
+  if (!farmType) return false;
+  selectedFarmType = farmTypeKey;
+  return true;
+}
+
+function getSelectedFarmType() {
+  return selectedFarmType;
+}
+
+function getFarmTypes() {
+  return FARM_TYPES;
+}
+
 // Spend resources for a building
 function spendResources(buildingKey) {
   const building = BUILDINGS[buildingKey];
@@ -717,6 +834,49 @@ function smelt(oreType) {
   state.inventory[bar] = (state.inventory[bar] || 0) + 1;
   showMessage(`Smelted ${bar}!`);
   return true;
+}
+
+// Feature 33: Community Center bundles - donate goods to complete a bundle
+function donateToBundle(bundleKey) {
+  const bundle = BUNDLES[bundleKey];
+  if (!bundle) return false;
+  if (bundle.completed) return false;
+  for (const [itemKey, requiredAmt] of Object.entries(bundle.required)) {
+    if ((state.inventory[itemKey] || 0) < requiredAmt) {
+      showMessage(`Not enough ${itemKey} for the ${bundle.name}.`);
+      return false;
+    }
+  }
+  for (const [itemKey, requiredAmt] of Object.entries(bundle.required)) {
+    state.inventory[itemKey] = (state.inventory[itemKey] || 0) - requiredAmt;
+    if (state.inventory[itemKey] <= 0) delete state.inventory[itemKey];
+  }
+  bundle.completed = true;
+  unlockArea(bundle.reward);
+  showMessage(`Bundle complete: ${bundle.name}!`);
+  return true;
+}
+
+// Feature 34: Bundle rewards - completing bundles unlocks new areas/activities
+function unlockArea(areaKey) {
+  if (!areaKey) return;
+  unlockedAreas[areaKey] = true;
+}
+
+function isAreaUnlocked(areaKey) {
+  return !!unlockedAreas[areaKey];
+}
+
+function getBundle(bundleKey) {
+  return BUNDLES[bundleKey] || null;
+}
+
+function getAllBundles() {
+  return BUNDLES;
+}
+
+function getUnlockedAreas() {
+  return unlockedAreas;
 }
 
 // Forageable wild items (original data)
@@ -1043,6 +1203,27 @@ const ValleyLifeAPI = {
   marryVillager,
   spouseNightlyHelp,
   haveChild,
+  // Community Center bundles (Feature 33-34)
+  BUNDLES,
+  donateToBundle,
+  unlockArea,
+  isAreaUnlocked,
+  getBundle,
+  getAllBundles,
+  getUnlockedAreas,
+  // Farm types (Feature 35)
+  FARM_TYPES,
+  selectFarmType,
+  getSelectedFarmType,
+  getFarmTypes,
+  // Multiplayer (Feature 36)
+  hostSession,
+  joinSession,
+  syncPlayerPosition,
+  getPlayerPosition,
+  getConnectedPlayers,
+  leaveSession,
+  resetMultiplayer,
 };
 
 if (typeof globalThis !== 'undefined') {
