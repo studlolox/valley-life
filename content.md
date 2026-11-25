@@ -282,6 +282,64 @@ These are **binary XNB content files**, not plain text. REA recovered readable p
 ### Characters with dialogue files in the APK
 Abigail, Alex, Caroline, Clint, Demetrius, Dwarf, Elliott, Emily, Evelyn, George, Gil, Gus, Haley, Harvey, Jas, Jodi, Kent, Krobus, Leah, Leo, Lewis, Linus, Marnie, Maru, Pam, Penny, Pierre, Robin, Sam, Sandy, Sebastian, Shane, Vincent, Willy, Wizard, plus `MarriageDialogue` files for the romanceable candidates (Abigail, Alex, Elliott, Emily, Haley, Harvey, Krobus, Leah, Maru, Penny, Sam, Sebastian, Shane) and a general `MarriageDialogue.xnb`.
 
+### Achievements (from `Data/Achievements.xnb`)
+Partial, fragmented names/descriptions recovered from the binary (illustrative only):
+- Greenhorn — Earn 15,000g
+- Cowpoke — 50+ (milking)
+- Homesteader — (2/…)
+- Millionaire — Earn 1,000,000g
+- Legend — (10-…)
+- A Complete Collection — donate to the museum collection
+- A New Friend — Reach a 5-heart friendship level with someone
+- Best Gamer — (10/…)
+- The Beloved Farmer — (8 people/…)
+- Cliques — (6/…)
+- Popular — (2/11…)
+- Cook — (… different recipes)
+- Sous Chef — (…/25 recipes)
+- Gourmet — (7/…)
+- Moving Up — Upgrade your house (… to maximum size)
+- D.I.Y. — Craft (1… items)
+- Artisan — (…/30…)
+- Fisherman — (… catch … fish)
+- Ol' Mariner — (…/245…)
+- Angler — (…/24…)
+- Mother Goose — (…/64…)
+- Treasure Trove — Donate (4…)
+- Gofer — (… 'Help Wanted' requests)
+- A Big … — (…/29…)
+- Polyculture — Ship (… of p… crop/…)
+- Shipper — (Mono…/2…)
+- A Distant Shore — reach Ginger Island
+- Two Thumbs — See a movie
+- Blue Ribbon — Get 1st place in the Stardew Valley Fair competition
+- An Unforgettable Soup — Delight the Governor
+- Good Neighbors — (… for … grow … family …)
+- Deep … — (… bottom of the … mines)
+
+### Events (from `Data/Events/*.xnb`)
+Event scripts recovered as fragmented strings (illustrative only):
+- `BusStop` — Robin introduces herself as the local carpenter sent by the Mayor to show the player their new home ("Hello! You must be @. I'm Robin, the local carpenter. Mayor Lewis sent me here to fetch you and show you your new home.")
+- `FarmHouse` — Grandpa's ghost appears ("My dear boy… It's been many years since we last spoke… My body has departed this world, but my heart will always remain in Stardew Valley.") followed by an evaluation and a magic hat reward.
+- `CommunityCenter` — George/Morris dialogue about a sale ("This means nothing. I'll just run a 75%-off sale and all my customers will come crawling back to me, begging for forgiveness.")
+- `Mine` — old mine shaft narrative text.
+- `Beach` — Haley: "My bracelet is gone! I know I had it on when I got…"
+- `BoatTunnel` — Willy: "Aye… a sad sight, isn't she?" (boat repair)
+- `AbandonedJojaMart` — `missingBundleComplete` / Junimo event at Community Center ("All the others made it back, except me… Now I can go home, too. Thank you!")
+- `DesertFestival` — `PlayerKilled` / `showItemsLost` event template.
+- Plus events at: AnimalShop, ArchaeologyHouse, Backwoods, BathHouse_Pool, DesertFestival, ElliottHouse, Farm, FishShop, Forest, HaleyHouse, HarveyRoom, Hospital, Island*, JoshHouse, LeahHouse, ManorHouse, Mountain, QiNutRoom, Railroad, Saloon, SamHouse, SandyHouse, ScienceHouse, SebastianRoom, SeedShop, Sewer, Sunroom, Temp, Tent, Town, Trailer, WizardHouse, Woods.
+
+### Quests / Help Wanted (from `Data/Achievements.xnb` + `1_6_Strings.xnb`)
+- `Gofer` achievement — complete "'Help Wanted' requests" (quests posted on the bulletin board outside Pierre's shop).
+- `Treasure Trove` — donate items to the museum.
+- Events reference `Quest 21` (AnimalShop caviar/vegetable delivery quest) and quest-related state flags (e.g. `addWorldState`).
+
+### Main Storyline Arcs (reference only)
+- **Arrival:** Player inherits a farm; Robin (carpenter) welcomes them at the bus stop and shows them their new home.
+- **Grandpa's Ghost:** On the 2nd (or 3rd) year anniversary, Grandpa's spirit appears to evaluate the player's farm and may reward a Magic Hat.
+- **Community Center / Junimos:** Restoring the Community Center involves Junimo events and bundle completion; an abandoned JojaMart storyline exists in parallel.
+- **Mine:** The old mine shaft is a recurring story location with associated events.
+
 ### Use for Valley Life
 This APK content is a **reference/comparison only**. Per AGENTS.md rules #3 and #4, all Valley Life dialogue, characters, and place names are written from scratch and renamed — nothing from the APK is copied into `js/game.js` or `content.md`.
 
