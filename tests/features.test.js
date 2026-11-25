@@ -691,5 +691,46 @@ test('Feature 45: Queuing item in Shipping Bin pays Gold overnight and records s
   assert(V.state.lastDaySummary && V.state.lastDaySummary.totalGoldEarned === 20, 'day summary should record 20G earned');
 });
 
+// ---------- Feature 46: Procedural 3D assets ----------
+test('Feature 46: Procedural 3D assets build characters, 16x4 crops, 13 animals, buildings, trees, and monsters', () => {
+  const A = V.Assets;
+  assert(A && typeof A.createCharacterMesh === 'function', 'Assets module should be exposed');
+
+  const player = A.createCharacterMesh({ role: 'player', tool: 'hoe', toolLevel: 1 });
+  assert(player instanceof THREE.Object3D && player.userData.leftArm && player.userData.heldTool, 'player mesh should be articulated with held tool');
+  A.setCharacterIcon(player, 'heart');
+  assert(player.userData.iconBadge !== null, 'character icon badge should attach');
+  A.animateCharacter(player, 0.016, 1.0, { moving: true });
+
+  const npc = A.createCharacterMesh({ role: 'smith' });
+  const mosskin = A.createCharacterMesh({ role: 'mosskin' });
+  assert(npc instanceof THREE.Object3D && mosskin instanceof THREE.Object3D, 'NPC and Mosskin meshes should build');
+
+  // All 16 crops × 4 stages
+  for (const cropKey of Object.keys(V.CROPS)) {
+    for (let stage = 0; stage <= 3; stage++) {
+      const cMesh = A.createCropMesh(cropKey, stage);
+      assert(cMesh instanceof THREE.Object3D && cMesh.children.length > 0, `crop ${cropKey} stage ${stage} should have geometry`);
+    }
+  }
+
+  // All 13 animals
+  const animalTypes = ['chicken', 'cow', 'goat', 'sheep', 'pig', 'rabbit', 'duck', 'dinosaur', 'ostrich', 'turtle', 'cat', 'dog', 'horse'];
+  for (const type of animalTypes) {
+    const aMesh = A.createAnimalMesh(type, 'golden');
+    assert(aMesh instanceof THREE.Object3D && aMesh.children.length > 0, `animal ${type} should have geometry`);
+  }
+
+  // Buildings, seasonal trees, and monsters
+  const house = A.createBuildingMesh('farmhouse', { isNight: true });
+  const hall = A.createBuildingMesh('willowbrookHall', { restored: true });
+  const bin = A.createBuildingMesh('shippingBin');
+  const tree = A.createTreeMesh('Autumn');
+  const slime = A.createMonsterMesh('slime', 'purple');
+  A.setMonsterHP(slime, 0.5);
+  assert(house instanceof THREE.Object3D && hall instanceof THREE.Object3D && bin.userData.lid, 'buildings should build');
+  assert(tree instanceof THREE.Object3D && slime instanceof THREE.Object3D, 'tree and monster should build');
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

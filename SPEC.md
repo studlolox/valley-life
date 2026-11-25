@@ -115,6 +115,7 @@ Each feature below has exactly one test that verifies that feature. Tests are wr
 | 43 | **Cooking and crafting** — Cook food or craft items from inventory ingredients. | Cooking a recipe consumes its required ingredients and adds the cooked dish to inventory. |
 | 44 | **Tool upgrades** — Upgrade tools at Garrick's Smithy using Gold and smelted metal bars. | Upgrading a tool deducts the required Gold and bars and increments the tool's upgrade level. |
 | 45 | **Shipping bin ledger** — Queue goods in the Shipping Bin to be sold overnight for Gold with a morning summary. | Queuing an item in the Shipping Bin and sleeping adds its sell price to Gold and records it in the day summary. |
+| 46 | **Procedural 3D assets** — Render articulated characters, 16×4 crop stages, seasonal trees, buildings, 13 animals, and mine monsters using procedural Three.js meshes and textures. | Building meshes for characters, all 16 crops × 4 stages, all 13 animals, buildings, seasonal trees, and monsters returns valid THREE.Object3D instances without throwing. |
 
 ---
 

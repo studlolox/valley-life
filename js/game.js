@@ -2,6 +2,7 @@
 // All code written from scratch, not copied from any source.
 
 import * as THREE from 'three';
+import * as Assets from './assets.js';
 import {
   LOCATIONS,
   CROPS,
@@ -229,6 +230,13 @@ function initGrid() {
 // ============ three.js Setup ============
 let scene, camera, renderer, gridHelper, floorMesh, hoverRingMesh;
 let playerMesh;
+let tileTextures = null;
+let propGroup = null;
+let landmarkGroup = null;
+const propMeshes = new Map(); // key "r,c" -> 3D prop mesh
+const animatedAnimals = [];
+const animatedCrops = [];
+let lastMoveAt = 0;
 const tileMeshes = new Map(); // key "r,c" -> mesh
 let cameraZoom = 22;
 const raycaster = new THREE.Raycaster();
@@ -265,19 +273,27 @@ function initThree() {
   dirLight.position.set(12, 24, 10);
   scene.add(dirLight);
 
+  tileTextures = Assets.createTileTextures();
+
   // Floor grid
   const floorGeo = new THREE.PlaneGeometry(GRID_WIDTH * TILE_SIZE, GRID_HEIGHT * TILE_SIZE);
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0x7CFC00 });
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    map: tileTextures?.grass || null,
+  });
+  if (!tileTextures?.grass) floorMat.color.setHex(0x5fa83a);
   floorMesh = new THREE.Mesh(floorGeo, floorMat);
   floorMesh.rotation.x = -Math.PI / 2;
   scene.add(floorMesh);
 
-  // Player
-  playerMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1.8, 1),
-    new THREE.MeshStandardMaterial({ color: 0x4169E1 })
-  );
-  scene.add(playerMesh);
+  // World prop & landmark containers
+  propGroup = new THREE.Group();
+  scene.add(propGroup);
+  landmarkGroup = new THREE.Group();
+  scene.add(landmarkGroup);
+
+  // Articulated Player
+  rebuildPlayerMesh();
 
   // Hover tile highlight ring
   const ringGeo = new THREE.RingGeometry(TILE_SIZE * 0.36, TILE_SIZE * 0.46, 4);
@@ -299,6 +315,55 @@ function initThree() {
   window.addEventListener('resize', onWindowResize);
 }
 
+function rebuildPlayerMesh() {
+  if (!scene) return;
+  if (playerMesh) scene.remove(playerMesh);
+  const toolKey = state.selectedTool === 'fishingRod' ? 'rod' : state.selectedTool;
+  playerMesh = Assets.createCharacterMesh({
+    role: 'player',
+    hairColor: state.playerAppearance?.hairColor || '#5C3A21',
+    shirtColor: state.playerAppearance?.shirtColor || '#4169E1',
+    tool: toolKey,
+    toolLevel: state.toolLevels?.[state.selectedTool] || 0,
+  });
+  scene.add(playerMesh);
+  updatePlayerPosition();
+}
+
+function buildLandmarks() {
+  if (!landmarkGroup) return;
+  while (landmarkGroup.children.length) landmarkGroup.remove(landmarkGroup.children[0]);
+
+  const halfW = (GRID_WIDTH * TILE_SIZE) / 2;
+  const halfH = (GRID_HEIGHT * TILE_SIZE) / 2;
+
+  const farmhouse = Assets.createBuildingMesh('farmhouse', { isNight: state.isNight });
+  farmhouse.position.set(-halfW + 3.5, 0, -halfH - 2.2);
+  landmarkGroup.add(farmhouse);
+
+  const bin = Assets.createBuildingMesh('shippingBin');
+  bin.position.set(-halfW + 7.2, 0, -halfH - 1.2);
+  landmarkGroup.add(bin);
+
+  // Built farm structures (coop, barn, shed, stable)
+  state.buildings.forEach((b, idx) => {
+    const bMesh = Assets.createBuildingMesh(b.type, { isNight: state.isNight });
+    bMesh.position.set(halfW + 2.8, 0, -halfH + 4 + idx * 4.2);
+    landmarkGroup.add(bMesh);
+  });
+
+  // Farm animals
+  animatedAnimals.length = 0;
+  state.animals.forEach((a, idx) => {
+    const aMesh = Assets.createAnimalMesh(a.type, a.variant);
+    const row = 2 + (idx % 6) * 2;
+    const col = GRID_WIDTH - 2 - Math.floor(idx / 6) * 2;
+    aMesh.position.set(-halfW + col * TILE_SIZE + TILE_SIZE / 2, 0, -halfH + row * TILE_SIZE + TILE_SIZE / 2);
+    landmarkGroup.add(aMesh);
+    animatedAnimals.push({ mesh: aMesh, seed: idx * 1.37 });
+  });
+}
+
 // Build tile meshes for the farm area
 function buildTileMeshes() {
   // Clear existing
@@ -310,19 +375,11 @@ function buildTileMeshes() {
 
   for (let r = 0; r < GRID_HEIGHT; r++) {
     for (let c = 0; c < GRID_WIDTH; c++) {
-      const tile = state.grid[r][c];
       const x = centerX + c * TILE_SIZE + TILE_SIZE / 2;
       const z = centerZ + r * TILE_SIZE + TILE_SIZE / 2;
 
-      let color = 0x7CFC00; // grass
-      if (tile.type === 'tilled') color = 0x8B4513;
-      if (tile.planted) color = 0x228B22;
-      if (tile.hasTree) color = 0x556B2F;
-      if (tile.hasRock) color = 0x808080;
-      if (tile.hasWeed) color = 0x9ACD32;
-
-      const geo = new THREE.PlaneGeometry(TILE_SIZE * 0.9, TILE_SIZE * 0.9);
-      const mat = new THREE.MeshStandardMaterial({ color });
+      const geo = new THREE.PlaneGeometry(TILE_SIZE * 0.96, TILE_SIZE * 0.96);
+      const mat = new THREE.MeshStandardMaterial({ color: 0xffffff });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.rotation.x = -Math.PI / 2;
       mesh.position.set(x, 0.01, z);
@@ -331,6 +388,8 @@ function buildTileMeshes() {
     }
   }
 
+  refreshTileColors();
+  buildLandmarks();
   updatePlayerPosition();
 }
 
@@ -346,22 +405,74 @@ function updatePlayerPosition() {
   const centerZ = -(GRID_HEIGHT * TILE_SIZE) / 2;
   const x = centerX + state.player.x * TILE_SIZE + TILE_SIZE / 2;
   const z = centerZ + state.player.y * TILE_SIZE + TILE_SIZE / 2;
-  playerMesh.position.set(x, 0.9, z);
+  playerMesh.position.set(x, 0, z);
+  lastMoveAt = performance.now ? performance.now() : Date.now();
 }
 
 function refreshTileColors() {
   if (tileMeshes.size === 0) return;
+  const season = SEASONS[state.seasonIndex] || 'Spring';
+  const centerX = -(GRID_WIDTH * TILE_SIZE) / 2;
+  const centerZ = -(GRID_HEIGHT * TILE_SIZE) / 2;
+
+  if (propGroup) {
+    propMeshes.forEach((m) => propGroup.remove(m));
+    propMeshes.clear();
+  }
+  animatedCrops.length = 0;
+
   tileMeshes.forEach((mesh, key) => {
     const [r, c] = key.split(',').map(Number);
     const tile = state.grid[r][c];
-    let color = 0x7CFC00;
-    if (tile.type === 'tilled') color = 0x8B4513;
-    if (tile.planted) color = 0x228B22;
-    if (tile.hasTree) color = 0x556B2F;
-    if (tile.hasRock) color = 0x808080;
-    if (tile.hasWeed) color = 0x9ACD32;
-    mesh.material.color.set(color);
+    const x = centerX + c * TILE_SIZE + TILE_SIZE / 2;
+    const z = centerZ + r * TILE_SIZE + TILE_SIZE / 2;
+
+    if (tile.type === 'tilled') {
+      const tex = tile.watered ? tileTextures?.watered : tileTextures?.tilled;
+      mesh.material.map = tex || null;
+      mesh.material.color.setHex(tex ? 0xffffff : (tile.watered ? 0x472a14 : 0x7a4b26));
+    } else {
+      mesh.material.map = tileTextures?.grass || null;
+      mesh.material.color.setHex(tileTextures?.grass ? 0xffffff : 0x5fa83a);
+    }
+    mesh.material.needsUpdate = true;
+
+    if (!propGroup) return;
+    let prop = null;
+    if (tile.hasTree) {
+      prop = Assets.createTreeMesh(season);
+    } else if (tile.hasRock) {
+      prop = Assets.createRockMesh();
+    } else if (tile.hasWeed) {
+      prop = Assets.createWeedMesh();
+    } else if (tile.planted) {
+      const cropDef = CROPS[tile.planted];
+      const maxDays = cropDef?.growDays || 4;
+      const ratio = Math.min(1, (tile.growth || 0) / maxDays);
+      const stage = ratio >= 1 ? 3 : ratio >= 0.55 ? 2 : ratio > 0 ? 1 : 0;
+      prop = Assets.createCropMesh(tile.planted, stage);
+      if (stage === 3) animatedCrops.push(prop);
+    }
+    if (prop) {
+      prop.position.set(x, 0.02, z);
+      propGroup.add(prop);
+      propMeshes.set(key, prop);
+    }
   });
+
+  // Render forage items on ground
+  if (propGroup && state.forageItems) {
+    state.forageItems.forEach((f, idx) => {
+      const fMesh = Assets.createForageMesh(f.type);
+      const x = centerX + f.c * TILE_SIZE + TILE_SIZE / 2;
+      const z = centerZ + f.r * TILE_SIZE + TILE_SIZE / 2;
+      fMesh.position.set(x, 0.02, z);
+      propGroup.add(fMesh);
+      propMeshes.set(`forage_${idx}`, fMesh);
+    });
+  }
+
+  buildLandmarks();
 }
 
 // ============ UI ============
@@ -380,6 +491,10 @@ function updateHUD() {
 
 function setSelectedTool(tool) {
   state.selectedTool = tool;
+  if (playerMesh) {
+    const toolKey = tool === 'fishingRod' ? 'rod' : tool;
+    Assets.setCharacterTool(playerMesh, toolKey, state.toolLevels?.[tool] || 0);
+  }
   updateHUD();
 }
 
@@ -1293,9 +1408,7 @@ function startNewGame(options = {}) {
   state.timeOfDay = 6;
   state.isNight = false;
   state.gameStarted = true;
-  if (playerMesh && playerMesh.material) {
-    playerMesh.material.color.set(state.playerAppearance.shirtColor);
-  }
+  rebuildPlayerMesh();
   initGrid();
   placeInitialDecorations();
   placeForageItems();
@@ -1398,9 +1511,7 @@ function applySavePayload(data) {
   }
   if (data.selectedFarmType) selectedFarmType = data.selectedFarmType;
   state.gameStarted = true;
-  if (playerMesh && playerMesh.material && state.playerAppearance?.shirtColor) {
-    playerMesh.material.color.set(state.playerAppearance.shirtColor);
-  }
+  rebuildPlayerMesh();
   refreshTileColors();
   updatePlayerPosition();
   updateHUD();
@@ -1600,6 +1711,7 @@ function initControls() {
 }
 
 function useTool() {
+  if (playerMesh?.userData) playerMesh.userData.swingTimer = 0.28;
   switch (state.selectedTool) {
     case 'hoe': return tillTile();
     case 'water': return waterTile();
@@ -1679,8 +1791,24 @@ function placeInitialDecorations() {
 }
 
 const _cameraTarget = new THREE.Vector3();
-function animate() {
+let _lastFrameTime = 0;
+function animate(now = 0) {
   requestAnimationFrame(animate);
+  const t = now * 0.001;
+  const dt = Math.min(0.1, _lastFrameTime ? (now - _lastFrameTime) * 0.001 : 0.016);
+  _lastFrameTime = now;
+
+  if (playerMesh) {
+    const moving = (performance.now ? performance.now() : Date.now()) - lastMoveAt < 180;
+    Assets.animateCharacter(playerMesh, dt, t, { moving, fishing: state.selectedTool === 'fishingRod' });
+  }
+  for (let i = 0; i < animatedAnimals.length; i++) {
+    Assets.animateAnimal(animatedAnimals[i].mesh, t, animatedAnimals[i].seed);
+  }
+  for (let i = 0; i < animatedCrops.length; i++) {
+    animatedCrops[i].position.y = 0.02 + Math.sin(t * 3 + i) * 0.03;
+  }
+
   if (playerMesh && camera) {
     _cameraTarget.set(
       playerMesh.position.x,
@@ -1822,6 +1950,8 @@ const ValleyLifeAPI = {
   importSaveJSON,
   useTool,
   interactOrUseAt,
+  // Phase 3 Procedural 3D Assets
+  Assets,
 };
 
 if (typeof globalThis !== 'undefined') {

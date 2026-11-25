@@ -43,5 +43,6 @@ All features in `SPEC.md` (36 numbered features, one test each) are implemented 
 - Feature 35: Farm types
 - Feature 36: Multiplayer
 - Features 39–45: Economy, quests, storyline events, achievements, cooking/crafting, tool upgrades, and shipping bin ledger
+- Feature 46: Procedural 3D assets, textures, and animations (`js/assets.js`)
 
 Run the full test suite with `npm test`.
